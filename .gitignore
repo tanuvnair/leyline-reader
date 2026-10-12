@@ -137,10 +137,15 @@ dist
 !.yarn/sdks
 !.yarn/versions
 
-# Vite files
+# Vite / Electron build
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+dist-electron/
+release/
+
+# Local config overrides
+config/local.json
 
 # Astro generated types
 .astro/
