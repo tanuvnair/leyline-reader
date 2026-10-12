@@ -60,7 +60,7 @@
     "frame": false,
     "customTitleBar": true,
     "titleBarHeight": 36,
-    "devTools": true
+    "devTools": false
   },
   "security": {
     "allowedExternalHosts": [

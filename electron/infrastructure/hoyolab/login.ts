@@ -1,14 +1,15 @@
 import {BrowserWindow, session} from 'electron';
-import {loadConfig} from '../config/load';
-import {saveHoyoCookie, type HoyoCookiePayload} from '../store/vault';
-import {hardenSession} from '../security/session';
-import {attachHoyoLoginGuards} from '../security/window';
-import {isAllowedHoyoNavigation} from '../security/trust';
+import type {HoyoCookiePayload} from '../../domain/account/types';
 import {
   cookieMapToString,
   hasMinimumAuthCookies,
   normalizeHoyoCookies,
-} from './cookies';
+} from '../../domain/hoyo/cookies';
+import type {HoyoLoginPort} from '../../domain/ports/hoyo-login';
+import {loadConfig} from '../config/load';
+import {hardenSession} from '../security/session';
+import {attachHoyoLoginGuards} from '../security/window';
+import {isAllowedHoyoNavigation} from '../security/trust';
 
 function extractRelevantCookies(
   allCookies: Electron.Cookie[],
@@ -35,7 +36,11 @@ function cookieMatchesConfiguredDomain(
   });
 }
 
-export async function openHoyoLoginWindow(
+/**
+ * Opens the login window and returns captured cookies without persisting them.
+ * Application layer owns vault writes and rollback.
+ */
+export async function captureHoyoCookies(
   parent: BrowserWindow | null,
 ): Promise<HoyoCookiePayload> {
   const config = loadConfig();
@@ -77,8 +82,6 @@ export async function openHoyoLoginWindow(
         return;
       }
       try {
-        // Collect from the whole partition, then filter — Electron's domain filter
-        // misses host-only cookies when the filter uses a leading-dot domain.
         const allCookies = await ses.cookies.get({});
         const collected = allCookies.filter((cookie) =>
           cookieMatchesConfiguredDomain(
@@ -102,7 +105,6 @@ export async function openHoyoLoginWindow(
           cookie: cookieMapToString(normalized),
           capturedAt: new Date().toISOString(),
         };
-        saveHoyoCookie(payload);
         await ses.clearStorageData();
         if (!loginWin.isDestroyed()) {
           loginWin.close();
@@ -152,3 +154,8 @@ export async function openHoyoLoginWindow(
     void loginWin.loadURL(config.hoyo.loginUrl);
   });
 }
+
+export const hoyoLoginPort: HoyoLoginPort = {
+  captureCookies: (parentWindow) =>
+    captureHoyoCookies(parentWindow as BrowserWindow | null),
+};

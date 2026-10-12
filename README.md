@@ -10,6 +10,10 @@ Electron dashboard for Genshin Impact players. Link a HoYoverse account in-app, 
 - `@shadcn/lint` (all rules enabled)
 - Local encrypted vault (`electron-store` + `safeStorage`)
 
+## Architecture
+
+Main process follows **Presentation → Application → Domain → Infrastructure**. See [`docs/architecture.md`](docs/architecture.md). Runtime knobs stay in [`config/`](config/); layer import rules are checked by `dependency-cruiser` via `npm run check`.
+
 ## Getting started
 
 ```bash

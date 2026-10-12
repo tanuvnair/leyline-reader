@@ -7,7 +7,7 @@ description: >-
 
 # genshin.dev client
 
-- Implementation: `electron/genshin-dev/client.ts`.
+- Implementation: `electron/infrastructure/genshin-dev/client.ts` (`catalogPort`).
 - Base URL, timeout, and cache TTL come from config (`genshinDev.*`).
 - Use list/detail endpoints like `characters` and `characters/{id}`; icons via `characters/{id}/icon`.
 - Enrichment must tolerate missing catalog entries for new characters.

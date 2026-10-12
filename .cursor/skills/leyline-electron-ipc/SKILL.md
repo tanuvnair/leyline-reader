@@ -8,7 +8,8 @@ description: >-
 # Leyline Electron IPC
 
 - Channels live in `electron/ipc/channels.ts` and must stay aligned with `electron/preload/index.ts`.
-- Register handlers in `electron/ipc/register.ts`. Never expose raw cookies to the renderer.
-- Cookie capture is `electron/hoyolab/login.ts` using a partitioned `BrowserWindow` and config-driven domains/keys.
-- Vault encryption uses Electron `safeStorage` in `electron/store/vault.ts`.
+- Register handlers in `electron/ipc/register.ts` stay thin: validate sender + Zod → call Application use cases. Never expose raw cookies to the renderer.
+- Cookie capture: `electron/infrastructure/hoyolab/login.ts` (Application persists via vault).
+- Vault encryption: `electron/infrastructure/vault/vault.ts` (`safeStorage`).
+- Use cases: `electron/application/`. Domain ports: `electron/domain/ports/`.
 - After API changes, update `electron/preload/index.d.ts` / `window.leyline` typings.

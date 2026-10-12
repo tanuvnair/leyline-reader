@@ -2,12 +2,12 @@ import {app, BrowserWindow, Menu} from 'electron';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 import os from 'node:os';
-import {loadConfig} from '../config/load';
-import {registerIpcHandlers} from '../ipc/register';
+import {clearSensitiveSessionState} from '../infrastructure/auth/session';
+import {loadConfig} from '../infrastructure/config/load';
+import {hardenDefaultSession} from '../infrastructure/security/session';
+import {attachMainWindowGuards} from '../infrastructure/security/window';
 import {IpcChannels} from '../ipc/channels';
-import {hardenDefaultSession} from '../security/session';
-import {attachMainWindowGuards} from '../security/window';
-import {clearSensitiveSessionState} from '../auth/session';
+import {registerIpcHandlers} from '../ipc/register';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 

@@ -5,7 +5,7 @@ export interface PasswordPolicy {
   requireSpecial: boolean;
 }
 
-/** Client-side checks aligned with electron/auth/session assertPasswordPolicy. */
+/** Client-side checks aligned with domain assertPasswordPolicy. */
 export function validateNewPassword(
   password: string,
   policy: PasswordPolicy,

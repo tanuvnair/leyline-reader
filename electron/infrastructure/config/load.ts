@@ -5,7 +5,7 @@ import {
   appConfigSchema,
   type AppConfig,
   type PublicAppConfig,
-} from '../../config/schema';
+} from '../../../config/schema';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -13,7 +13,6 @@ function resolveConfigRoot(): string {
   // Dev / unpackaged: project config/. Packaged: extraResources → resources/config
   const candidates = [
     path.join(process.env.APP_ROOT ?? '', 'config'),
-    path.join(__dirname, '../../config'),
     path.join(__dirname, '../../../config'),
     typeof process.resourcesPath === 'string'
       ? path.join(process.resourcesPath, 'config')

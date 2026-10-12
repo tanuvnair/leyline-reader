@@ -1,3 +1,4 @@
+import type {CatalogCharacter, CatalogPort} from '../../domain/ports/catalog';
 import {loadConfig} from '../config/load';
 import {isHttpsUrl} from '../security/trust';
 
@@ -60,7 +61,7 @@ async function fetchJson<T>(pathSuffix: string): Promise<T> {
   }
 }
 
-export interface GenshinDevCharacter {
+interface GenshinDevCharacter {
   name?: string;
   title?: string;
   vision?: string;
@@ -73,17 +74,13 @@ export interface GenshinDevCharacter {
   [key: string]: unknown;
 }
 
-export async function listCharacterIds(): Promise<string[]> {
-  return fetchJson<string[]>('characters');
-}
-
-export async function getCharacter(id: string): Promise<GenshinDevCharacter> {
+async function getCharacter(id: string): Promise<GenshinDevCharacter> {
   const slug = id.toLowerCase().replace(/\s+/g, '-');
   assertSafePathSuffix(`characters/${slug}`);
   return fetchJson<GenshinDevCharacter>(`characters/${slug}`);
 }
 
-export function characterIconUrl(id: string): string {
+function characterIconUrl(id: string): string {
   const config = loadConfig();
   const base = config.genshinDev.baseUrl.replace(/\/$/, '');
   const slug = id.toLowerCase().replace(/\s+/g, '-');
@@ -91,11 +88,11 @@ export function characterIconUrl(id: string): string {
   return `${base}/characters/${encodeURIComponent(slug)}/icon`;
 }
 
-export async function enrichCharacters(
+async function enrichCharacters(
   names: string[],
-): Promise<Record<string, GenshinDevCharacter & {iconUrl: string}>> {
+): Promise<Record<string, CatalogCharacter>> {
   const unique = [...new Set(names)].slice(0, 80);
-  const result: Record<string, GenshinDevCharacter & {iconUrl: string}> = {};
+  const result: Record<string, CatalogCharacter> = {};
   await Promise.all(
     unique.map(async (name) => {
       try {
@@ -115,3 +112,7 @@ export async function enrichCharacters(
 export function clearGenshinDevCache(): void {
   cache.clear();
 }
+
+export const catalogPort: CatalogPort = {
+  enrichCharacters,
+};

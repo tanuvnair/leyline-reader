@@ -1,21 +1,11 @@
 import {safeStorage, app} from 'electron';
 import Store from 'electron-store';
 import path from 'node:path';
+import type {HoyoCookiePayload, LinkedAccountMeta} from '../../domain/account/types';
+import type {VaultPort} from '../../domain/ports/vault';
 import {loadConfig} from '../config/load';
 
-export interface HoyoCookiePayload {
-  /** Serialized cookie string or key/value map for hoyoapi. */
-  cookie: string;
-  capturedAt: string;
-}
-
-export interface LinkedAccountMeta {
-  uid: number;
-  nickname: string;
-  level: number;
-  region: string;
-  linkedAt: string;
-}
+export type {HoyoCookiePayload, LinkedAccountMeta};
 
 interface VaultSchema {
   passwordHash: string | null;
@@ -113,3 +103,16 @@ export function getAccount(): LinkedAccountMeta | null {
 export function getVaultPath(): string {
   return getStore().path;
 }
+
+/** VaultPort adapter over electron-store + safeStorage. */
+export const vaultPort: VaultPort = {
+  getPasswordHash,
+  setPasswordHash,
+  hasPassword,
+  saveHoyoCookie,
+  loadHoyoCookie,
+  clearHoyoCookie,
+  hasHoyoCookie,
+  saveAccount,
+  getAccount,
+};

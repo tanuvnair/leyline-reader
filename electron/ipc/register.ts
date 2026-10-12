@@ -1,42 +1,30 @@
 import {ipcMain, type BrowserWindow, type IpcMainInvokeEvent} from 'electron';
 import {z} from 'zod';
-import {getPublicConfig, loadConfig} from '../config/load';
+import {redactError} from '../application/errors';
 import {
   changePassword,
   getAuthStatus,
-  lockSession,
-  requireUnlocked,
+  lock,
   setupPassword,
   unlock,
-} from '../auth/session';
-import {openHoyoLoginWindow} from '../hoyolab/login';
+} from '../application/auth/auth-use-cases';
 import {
-  fetchCharacters,
-  fetchDailyNoteResult,
-  fetchGameRecord,
-  fetchSpiralAbyss,
-  validateAndLinkAccount,
-} from '../hoyolab/client';
-import {enrichCharacters} from '../genshin-dev/client';
+  getAbyss,
+  getCharacters,
+  getOverview,
+} from '../application/data/data-use-cases';
 import {
-  clearHoyoCookie,
-  getAccount,
-  hasHoyoCookie,
-} from '../store/vault';
-import {assertTrustedIpcSender} from '../security/trust';
+  getHoyoStatus,
+  linkHoyoAccount,
+  unlinkHoyoAccount,
+} from '../application/hoyo/hoyo-use-cases';
+import {NOT_LINKED} from '../domain/account/errors';
+import {getPublicConfig, loadConfig} from '../infrastructure/config/load';
+import {assertTrustedIpcSender} from '../infrastructure/security/trust';
 import {IpcChannels} from './channels';
 
 const passwordSchema = z.string().min(1).max(256);
 const abyssScheduleSchema = z.union([z.literal(1), z.literal(2)]).default(1);
-const NOT_LINKED = 'not-linked';
-
-function redactError(error: unknown): Error {
-  const message = error instanceof Error ? error.message : 'Unknown error';
-  const redacted = message
-    .replace(/(ltoken|cookie_token|ltmid|ltuid)[_v0-9]*=\S+/gi, '[REDACTED]')
-    .replace(/Bearer\s+\S+/gi, '[REDACTED]');
-  return new Error(redacted);
-}
 
 function withSecurity<TArgs extends unknown[], TResult>(
   handler: (event: IpcMainInvokeEvent, ...args: TArgs) => TResult | Promise<TResult>,
@@ -45,6 +33,11 @@ function withSecurity<TArgs extends unknown[], TResult>(
     assertTrustedIpcSender(event);
     return handler(event, ...args);
   };
+}
+
+function asErrorResult(error: unknown) {
+  const message = redactError(error).message;
+  return {ok: false as const, error: message};
 }
 
 export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): void {
@@ -65,10 +58,9 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
     withSecurity(async (_event, password: unknown) => {
       try {
         const value = passwordSchema.parse(password);
-        await setupPassword(value);
-        return {ok: true as const};
+        return await setupPassword(value);
       } catch (error) {
-        return {ok: false as const, error: redactError(error).message};
+        return asErrorResult(error);
       }
     }),
   );
@@ -78,8 +70,7 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
     withSecurity(async (_event, password: unknown) => {
       try {
         const value = passwordSchema.parse(password);
-        const ok = await unlock(value);
-        return {ok};
+        return await unlock(value);
       } catch (error) {
         return {ok: false, error: redactError(error).message};
       }
@@ -88,10 +79,7 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
 
   ipcMain.handle(
     IpcChannels.AUTH_LOCK,
-    withSecurity(() => {
-      lockSession();
-      return {ok: true};
-    }),
+    withSecurity(() => lock()),
   );
 
   ipcMain.handle(
@@ -100,10 +88,9 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
       try {
         const current = passwordSchema.parse(currentPassword);
         const next = passwordSchema.parse(newPassword);
-        await changePassword(current, next);
-        return {ok: true as const};
+        return await changePassword(current, next);
       } catch (error) {
-        return {ok: false as const, error: redactError(error).message};
+        return asErrorResult(error);
       }
     }),
   );
@@ -112,12 +99,7 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
     IpcChannels.HOYO_STATUS,
     withSecurity(() => {
       try {
-        requireUnlocked();
-        return {
-          ok: true as const,
-          linked: hasHoyoCookie(),
-          account: getAccount(),
-        };
+        return getHoyoStatus();
       } catch (error) {
         return {
           ok: false as const,
@@ -133,19 +115,9 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
     IpcChannels.HOYO_LINK,
     withSecurity(async () => {
       try {
-        requireUnlocked();
-        await openHoyoLoginWindow(getMainWindow());
-        try {
-          const account = await validateAndLinkAccount();
-          return {ok: true as const, account};
-        } catch (error) {
-          // Login window already persisted cookies; roll back on failed validate
-          // so Settings does not show "Linked" with a broken session.
-          clearHoyoCookie();
-          throw error;
-        }
+        return await linkHoyoAccount(getMainWindow());
       } catch (error) {
-        return {ok: false as const, error: redactError(error).message};
+        return asErrorResult(error);
       }
     }),
   );
@@ -154,11 +126,9 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
     IpcChannels.HOYO_UNLINK,
     withSecurity(() => {
       try {
-        requireUnlocked();
-        clearHoyoCookie();
-        return {ok: true as const};
+        return unlinkHoyoAccount();
       } catch (error) {
-        return {ok: false as const, error: redactError(error).message};
+        return asErrorResult(error);
       }
     }),
   );
@@ -167,23 +137,13 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
     IpcChannels.DATA_OVERVIEW,
     withSecurity(async () => {
       try {
-        requireUnlocked();
-        if (!hasHoyoCookie()) {
+        return await getOverview();
+      } catch (error) {
+        const message = redactError(error).message;
+        if (message === NOT_LINKED) {
           return {ok: false as const, error: NOT_LINKED};
         }
-        const [records, dailyNoteResult] = await Promise.all([
-          fetchGameRecord(),
-          fetchDailyNoteResult(),
-        ]);
-        return {
-          ok: true as const,
-          account: getAccount(),
-          records,
-          dailyNote: dailyNoteResult.ok ? dailyNoteResult.data : null,
-          dailyNoteError: dailyNoteResult.ok ? null : dailyNoteResult.error,
-        };
-      } catch (error) {
-        return {ok: false as const, error: redactError(error).message};
+        return {ok: false as const, error: message};
       }
     }),
   );
@@ -192,22 +152,13 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
     IpcChannels.DATA_CHARACTERS,
     withSecurity(async () => {
       try {
-        requireUnlocked();
-        if (!hasHoyoCookie()) {
+        return await getCharacters();
+      } catch (error) {
+        const message = redactError(error).message;
+        if (message === NOT_LINKED) {
           return {ok: false as const, error: NOT_LINKED};
         }
-        const list = await fetchCharacters();
-        const names = list
-          .map((c) => c.name)
-          .filter((n): n is string => Boolean(n));
-        const enrichment = await enrichCharacters(names);
-        return {
-          ok: true as const,
-          characters: list,
-          enrichment,
-        };
-      } catch (error) {
-        return {ok: false as const, error: redactError(error).message};
+        return {ok: false as const, error: message};
       }
     }),
   );
@@ -216,15 +167,14 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
     IpcChannels.DATA_ABYSS,
     withSecurity(async (_event, scheduleType: unknown) => {
       try {
-        requireUnlocked();
-        if (!hasHoyoCookie()) {
+        const schedule = abyssScheduleSchema.parse(scheduleType ?? 1);
+        return await getAbyss(schedule);
+      } catch (error) {
+        const message = redactError(error).message;
+        if (message === NOT_LINKED) {
           return {ok: false as const, error: NOT_LINKED};
         }
-        const schedule = abyssScheduleSchema.parse(scheduleType ?? 1);
-        const abyss = await fetchSpiralAbyss(schedule);
-        return {ok: true as const, abyss};
-      } catch (error) {
-        return {ok: false as const, error: redactError(error).message};
+        return {ok: false as const, error: message};
       }
     }),
   );

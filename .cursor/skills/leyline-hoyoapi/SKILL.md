@@ -7,12 +7,13 @@ description: >-
 
 # HoYoAPI usage
 
-- Client wrapper: `electron/hoyolab/client.ts`.
-- Cookie string comes from the encrypted vault after login — never hardcode credentials.
-- HoYoLab issues `ltoken_v2` / `ltuid_v2`; hoyoapi@1.x still requires `ltoken` / `ltuid`. Always normalize via `electron/hoyolab/cookies.ts` before constructing the client.
+- Client (Infrastructure): `electron/infrastructure/hoyolab/client.ts` (`hoyoRecordsPort`).
+- Cookie normalize (Domain): `electron/domain/hoyo/cookies.ts`.
+- Credentials are assembled in Application (`electron/application/hoyo/credentials.ts`) from the vault — never hardcode.
+- HoYoLab issues `ltoken_v2` / `ltuid_v2`; hoyoapi@1.x still requires `ltoken` / `ltuid`. Always normalize before constructing the client.
 - Prefer `GenshinImpact` with UID when known; use `GenshinImpact.create` only when linking.
-- Language and login / BBS API URLs come from `loadConfig()` / `config/default.json` (`hoyo.bbsApiBase`, `hoyo.characterListPath`).
-- Surface sanitized DTOs through IPC (`DATA_OVERVIEW`, `DATA_CHARACTERS`, `DATA_ABYSS`).
+- Language and BBS API URLs come from config (`hoyo.bbsApiBase`, `hoyo.characterListPath`) via `AppConfigPort`.
+- Surface sanitized DTOs through Application use cases → IPC (`DATA_OVERVIEW`, `DATA_CHARACTERS`, `DATA_ABYSS`).
 
 ## Endpoint quirks (do not regress)
 

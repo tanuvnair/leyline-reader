@@ -8,7 +8,8 @@ After making changes, run `npm run check` and fix **all** errors before finishin
 
 ## 1. Project conventions
 
-- Do **not** hardcode URLs, cookie domains/keys, store names, window sizes, feature flags, password policy, lockout thresholds, or allowlists. Put them in [`config/default.json`](config/default.json), validate in [`config/schema.ts`](config/schema.ts), read via [`electron/config/load.ts`](electron/config/load.ts).
+- **Layered architecture:** Presentation (`src/`, `electron/preload/`, `electron/ipc/`) → Application (`electron/application/`) → Domain (`electron/domain/`) → Infrastructure (`electron/infrastructure/`). Domain must not import Electron or `hoyoapi`. See [`docs/architecture.md`](docs/architecture.md). Do not put use-case orchestration in IPC handlers.
+- Do **not** hardcode URLs, cookie domains/keys, store names, window sizes, feature flags, password policy, lockout thresholds, or allowlists. Put them in [`config/default.json`](config/default.json), validate in [`config/schema.ts`](config/schema.ts), read via [`electron/infrastructure/config/load.ts`](electron/infrastructure/config/load.ts).
 - Optional local overrides: gitignored `config/local.json`, then `LEYLINE_*` env vars.
 - Prefer shadcn/ui under `src/components/ui`. Do not restyle primitives from outside that folder (`@shadcn/lint` enforces this).
 - **Do not overwrite theme fonts.** Use only fonts/tokens from the active shadcn preset (`font-sans`, `font-heading`, etc.). Never add custom display fonts (e.g. Palatino) or replace Inter/preset imports unless the user explicitly changes the preset.
@@ -64,7 +65,7 @@ Treat security regressions as blockers. Do not weaken controls “for convenienc
 
 ### 2.2 IPC trust boundary (A01 / Electron checklist #17)
 
-- Every `ipcMain.handle` must validate the sender with `assertTrustedIpcSender` ([`electron/security/trust.ts`](electron/security/trust.ts)).
+- Every `ipcMain.handle` must validate the sender with `assertTrustedIpcSender` ([`electron/infrastructure/security/trust.ts`](electron/infrastructure/security/trust.ts)).
 - Validate **all** IPC payloads with Zod (or equivalent schema) before use.
 - Keep channel names centralized in [`electron/ipc/channels.ts`](electron/ipc/channels.ts); keep preload in sync.
 - Do not add fire-and-forget `ipcMain.on` listeners that mutate secrets without the same checks.
@@ -75,11 +76,11 @@ Treat security regressions as blockers. Do not weaken controls “for convenienc
 - HoYo login window navigation allowlist: HTTPS hosts derived from config HoYo domains.
 - `setWindowOpenHandler` must **deny** by default.
 - `shell.openExternal` only for HTTPS URLs whose host is in `security.allowedExternalHosts`.
-- Deny sensitive Chromium permissions via `setPermissionRequestHandler` ([`electron/security/session.ts`](electron/security/session.ts)).
+- Deny sensitive Chromium permissions via `setPermissionRequestHandler` ([`electron/infrastructure/security/session.ts`](electron/infrastructure/security/session.ts)).
 
 ### 2.4 Content Security Policy (A03 / Electron #7)
 
-- Enforce CSP via response headers in [`electron/security/session.ts`](electron/security/session.ts) on **mainFrame** responses only (not every subresource — that stalls Vite and strands the UI on Loading).
+- Enforce CSP via response headers in [`electron/infrastructure/security/session.ts`](electron/infrastructure/security/session.ts) on **mainFrame** responses only (not every subresource — that stalls Vite and strands the UI on Loading).
 - Do not put a second strict CSP meta tag in `index.html` (multiple CSPs AND together and break Vite HMR).
 - Production: `script-src 'self'` (no `'unsafe-inline'` / `'unsafe-eval'` for scripts).
 - Dev may relax script/connect for Vite HMR only when `VITE_DEV_SERVER_URL` is set and app is unpackaged.
@@ -153,14 +154,16 @@ Treat security regressions as blockers. Do not weaken controls “for convenienc
 
 | Area | Path |
 | --- | --- |
-| Trust / allowlists / CSP strings | `electron/security/trust.ts` |
-| Session headers & permissions | `electron/security/session.ts` |
-| Navigation / window.open guards | `electron/security/window.ts` |
-| IPC handlers | `electron/ipc/register.ts` |
-| Auth / lockout | `electron/auth/session.ts` |
-| Encrypted vault | `electron/store/vault.ts` |
-| HoYo login capture | `electron/hoyolab/login.ts` |
+| Trust / allowlists / CSP strings | `electron/infrastructure/security/trust.ts` |
+| Session headers & permissions | `electron/infrastructure/security/session.ts` |
+| Navigation / window.open guards | `electron/infrastructure/security/window.ts` |
+| IPC handlers (thin) | `electron/ipc/register.ts` |
+| Auth / lockout | `electron/infrastructure/auth/session.ts` |
+| Encrypted vault | `electron/infrastructure/vault/vault.ts` |
+| HoYo login capture | `electron/infrastructure/hoyolab/login.ts` |
 | Preload bridge | `electron/preload/index.ts` |
+| Use cases | `electron/application/` |
+| Domain ports / rules | `electron/domain/` |
 
 ---
 
