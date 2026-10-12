@@ -1,0 +1,83 @@
+{
+  "appName": "leyline-reader",
+  "productName": "Leyline Reader",
+  "userDataDirName": "leyline-reader",
+  "storage": {
+    "storeFileName": "leyline-vault",
+    "userDataDirOverride": null
+  },
+  "hoyo": {
+    "loginUrl": "https://www.hoyolab.com/home",
+    "bbsApiBase": "https://bbs-api-os.hoyolab.com",
+    "characterListPath": "/game_record/genshin/api/character/list",
+    "realTimeNotesUrl": "https://act.hoyolab.com/app/community-game-records-sea/index.html",
+    "cookieDomains": [".hoyolab.com", ".hoyoverse.com", ".mihoyo.com"],
+    "cookieKeys": [
+      "ltoken",
+      "ltoken_v2",
+      "ltuid",
+      "ltuid_v2",
+      "ltmid_v2",
+      "cookie_token",
+      "cookie_token_v2",
+      "account_id",
+      "account_id_v2",
+      "account_mid_v2",
+      "mi18nLang"
+    ],
+    "sessionPartition": "persist:hoyolab-login",
+    "successUrlPatterns": ["hoyolab.com/account", "hoyolab.com/home", "account.hoyoverse.com"],
+    "language": "en-us"
+  },
+  "genshinDev": {
+    "baseUrl": "https://api.genshin.dev",
+    "timeoutMs": 15000,
+    "cacheTtlMs": 3600000
+  },
+  "auth": {
+    "bcryptRounds": 12,
+    "sessionIdleTimeoutMs": 900000,
+    "maxFailedAttempts": 5,
+    "lockoutMs": 300000,
+    "passwordPolicy": {
+      "minLength": 10,
+      "requireLetter": true,
+      "requireNumber": true,
+      "requireSpecial": false
+    }
+  },
+  "window": {
+    "main": {
+      "width": 1280,
+      "height": 800,
+      "minWidth": 960,
+      "minHeight": 640
+    },
+    "login": {
+      "width": 480,
+      "height": 720
+    },
+    "frame": false,
+    "customTitleBar": true,
+    "titleBarHeight": 36,
+    "devTools": false
+  },
+  "security": {
+    "allowedExternalHosts": [
+      "hoyolab.com",
+      "hoyoverse.com",
+      "mihoyo.com",
+      "genshin.dev",
+      "api.genshin.dev"
+    ]
+  },
+  "features": {
+    "overview": true,
+    "characters": true,
+    "abyss": true,
+    "settings": true
+  },
+  "i18n": {
+    "defaultLanguage": "en-us"
+  }
+}
