@@ -1,28 +1,34 @@
 # Leyline Reader — backlog
 
-Tracked follow-ups that are **not** in the current Characters / dashboard polish pass.
+Tracked follow-ups outside the current polish pass.
 
-## Materials & artifacts (feasibility spike)
+## Materials & inventory
 
-**Goal:** Retrieve the linked account’s **materials** (bag / inventory) and **artifacts** (relics), if the HoYoLab API allows it.
+### Current: Settings GOOD import
 
-### Preliminary research (confirm in the spike)
+Shared inventory comes from a local **GOOD** JSON import in **Settings**, not HoYoLab.
 
-| Data | Likely feasible? | Notes |
-| --- | --- | --- |
-| **Equipped artifacts + weapon on a character** | Plausible | hoyoapi documents `reliquaries` + `weapon` on full character avatars; also `charactersSummary(characterIds)`. Modern roster uses `character/list` (often lighter) — may need a detail/summary call per character or a different path. Privacy / Battle Chronicle settings may gate fields. |
-| **Full artifact inventory (unequipped bag)** | Unlikely via Battle Chronicle | No documented hoyoapi / `game_record/genshin/api/*` inventory endpoint in the public wrapper routes (`index`, `character`, `avatarBasicInfo`, `spiralAbyss`, `dailyNote`). |
-| **Materials / crafting bag** | Unlikely via Battle Chronicle | Same — not exposed on documented HoYoLab game-record APIs. Would require an undocumented endpoint or another official surface (if any), which we should not assume. |
+- IPC: `GOOD_INVENTORY_STATUS` / `GOOD_INVENTORY_IMPORT` / `GOOD_INVENTORY_CLEAR` (unlock-gated; no HoYo link required)
+- Vault: encrypted `encryptedGoodInventory` via `safeStorage` (legacy `encryptedGoodArtifacts` migrated on read)
+- Config: `inventory.goodMaxBytes` (default 8_000_000)
+- Browse: `#/artifacts`, `#/weapons`, `#/materials`
 
-### Spike tasks
+| Data | Status |
+| --- | --- |
+| **Full artifact inventory** | **Via GOOD import** (Settings → Artifacts browse) |
+| **Full weapons inventory** | **Via GOOD `weapons[]`** (Settings → Weapons browse) |
+| **Materials bag** | **Optional** community `materials` map in GOOD; empty when absent |
+| **Equipped relics via HoYoLab** | Retired (probe removed); optional future Build section could re-add character detail only |
 
-1. Inspect live responses from `character/list`, legacy `character`, and `charactersSummary` / detail for `weapon` + `reliquaries` (and whether empty under current privacy).
-2. Search HoYoLab BBS / app traffic docs or community Enka-style notes for any **bag/materials** endpoint — document findings (yes/no + URL if yes).
-3. If only equipped gear is available: plan character-detail “Build” section (weapon + 5 relics) as a follow-up feature; keep materials out or mark blocked.
-4. If nothing usable: close with a short ADR-style note here / in `docs/` so we don’t re-investigate blindly.
+### Follow-ups
+
+1. Talent / weapon ascension grind planner (weekday books, boss mats, resin-aware tips) — inspired by progression tools alongside [Genshin Optimizer](https://frzyc.github.io/genshin-optimizer/) / [Irminsul](https://github.com/konkers/irminsul/releases).
+2. Refresh Ambr/yatta-derived catalogs (`scripts/generate-good-catalogs.mjs`) when new weapons/materials ship.
+3. Optional character-detail “Build” using equipped gear from HoYo character detail (not the bag).
+4. Do not re-investigate undocumented bag/materials HoYo endpoints without a reviewed official surface or Enka product decision.
 
 ## Other ideas
 
-- **Enka.Network** (or similar) as an alternate public showcase source — separate product/privacy decision; do not add without an explicit choice.
+- **Enka.Network API** (uid showcase / builds) as an alternate account data source — separate product/privacy decision; do not add without an explicit choice. *(Enka **CDN** icons are already the primary image source for avatars/relics/weapons.)*
 - Theme persistence in the Electron vault (currently `next-themes` local storage only).
 - Official miHoYo element SVG assets — out of scope; stick to Phosphor + Moegirl-aligned color tokens.

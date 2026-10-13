@@ -27,7 +27,22 @@ export function setCached(key: string, data: unknown, ttlMs: number): void {
   });
 }
 
-/** Drop HoYo overview / characters / abyss caches (link, unlink, lock, force). */
+/**
+ * Cache until explicit delete / clearHoyoDataCache (lock, quit, link events).
+ * Used for vault-backed payloads (e.g. GOOD artifacts) that are not TTL-bound.
+ */
+export function setSessionCached(key: string, data: unknown): void {
+  store.set(key, {
+    data,
+    expiresAt: Number.POSITIVE_INFINITY,
+  });
+}
+
+export function deleteCached(key: string): void {
+  store.delete(key);
+}
+
+/** Drop HoYo + session caches (link, unlink, lock, quit). */
 export function clearHoyoDataCache(): void {
   store.clear();
 }

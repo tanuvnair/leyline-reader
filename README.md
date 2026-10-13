@@ -1,6 +1,8 @@
 # Leyline Reader
 
-Desktop dashboard for Genshin Impact players. Link a HoYoverse account in-app, sync personal Battle Chronicle data, enrich the roster with static catalog metadata, and browse Overview / Characters / Spiral Abyss with a light–dark theme.
+Desktop dashboard for Genshin Impact players. Link a HoYoverse account in-app, sync personal Battle Chronicle data, enrich the roster with static catalog metadata, import a GOOD inventory in Settings, and browse Overview / Characters / Artifacts / Weapons / Materials / Spiral Abyss with a light–dark theme.
+
+**Unofficial fan project.** Not affiliated with, endorsed by, or connected to miHoYo / HoYoverse / Cognosphere.
 
 ## Features
 
@@ -8,9 +10,10 @@ Desktop dashboard for Genshin Impact players. Link a HoYoverse account in-app, s
 - In-app HoYoverse login window; cookies encrypted with OS `safeStorage`
 - Overview: resin / commissions / expeditions / achievements + world progress
 - Characters: searchable roster, URL-synced filters, detail route, CDN avatars
+- Artifacts / Weapons / Materials: browse vault-encrypted GOOD inventory (import in Settings)
 - Spiral Abyss: current / previous cycle metrics
-- Settings: Appearance (light / dark / system), account link, password change
-- In-memory TTL caches (main process + renderer roster session cache)
+- Settings: Appearance, HoYoverse link, GOOD inventory import, password change
+- In-memory caches (HoYo TTL + GOOD inventory session cache; renderer roster / inventory providers)
 
 ## Stack
 
@@ -29,15 +32,18 @@ Desktop dashboard for Genshin Impact players. Link a HoYoverse account in-app, s
 | Password hashing | bcryptjs | [bcryptjs](https://github.com/dcodeIO/bcrypt.js) |
 | Lint | ESLint + `@shadcn/lint` + dependency-cruiser | [ESLint](https://eslint.org/) · [@shadcn/lint](https://www.npmjs.com/package/@shadcn/lint) · [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) |
 | Packaging | electron-builder | [electron-builder](https://www.electron.build/) |
+| Language | TypeScript | [TypeScript](https://www.typescriptlang.org/) |
 
 ### Game / account data sources
 
 | Source | Role | Links |
 | --- | --- | --- |
-| HoYoLab / HoYoAPI | Linked account records, roster, daily note, Spiral Abyss | [hoyoapi docs](https://vermaysha.github.io/hoyoapi/docs/guide/genshin-impact) · [npm hoyoapi](https://www.npmjs.com/package/hoyoapi) · [HoYoLAB](https://www.hoyolab.com/) |
-| genshin.dev | Optional character catalog enrichment (title, vision, weapon, nation, description) | [genshin.dev](https://genshin.dev/) · [API](https://api.genshin.dev/) |
-| miHoYo CDN | Character avatar PNGs (`UI_AvatarIcon_*`) via `hoyo.characterIconBaseUrl` | Config default: `upload-os-bbs.mihoyo.com` |
-| Moegirl `Genshincolor` | Element / rarity accent palette (community wiki tokens, not official HoYoverse design tokens) | [Moegirl Genshin Wiki](https://zh.moegirl.org.cn/Genshin_Impact) |
+| HoYoLab / [hoyoapi](https://www.npmjs.com/package/hoyoapi) | Linked account records, roster, daily note, Spiral Abyss | [hoyoapi docs](https://vermaysha.github.io/hoyoapi/docs/guide/genshin-impact) · [HoYoLAB](https://www.hoyolab.com/) |
+| [genshin.dev](https://genshin.dev/) | Optional character catalog enrichment (title, vision, weapon, nation, description) | [API](https://api.genshin.dev/) |
+| [Enka.Network](https://enka.network/) CDN | Primary character / relic / weapon PNGs (`UI_AvatarIcon_*`, `UI_RelicIcon_*`, `UI_EquipIcon_*`) | `https://enka.network/ui/` (HoYoLab upload CDN as fallback) |
+| HoYoLab upload CDN | Fallback avatar / equip PNGs when Enka 404s | `upload-os-bbs.mihoyo.com` |
+| GOOD format | Local inventory import — artifacts, weapons, optional materials (GO / Irminsul / scanners) | [Genshin Optimizer](https://frzyc.github.io/genshin-optimizer/) · [Irminsul](https://github.com/konkers/irminsul/releases) · community GOOD schema |
+| Moegirl `Genshincolor` | Element / rarity accent palette (community wiki tokens, not official HoYoverse design) | [Moegirl Genshin Wiki](https://zh.moegirl.org.cn/Genshin_Impact) |
 
 ## Architecture
 
@@ -52,7 +58,7 @@ Main process: **Presentation → Application → Domain → Infrastructure**.
 src/                         Renderer UI (routes, hooks, shadcn)
 electron/preload/            contextBridge → window.leyline
 electron/ipc/                Thin Zod + trusted-sender handlers
-electron/application/        Use cases + HoYo TTL cache
+electron/application/        Use cases + TTL / session caches
 electron/domain/             Ports, DTOs, icon resolution (no Electron)
 electron/infrastructure/     Vault, HoYo client/login, genshin.dev, security
 ```
@@ -99,11 +105,17 @@ Merge order: `default.json` → optional gitignored `config/local.json` → `LEY
 Notable config keys:
 
 - `hoyo.cacheTtlMs` — main-process overview / characters / abyss cache
-- `hoyo.characterIconBaseUrl` — avatar CDN directory
+- `inventory.goodMaxBytes` — max UTF-8 size for GOOD JSON imports
+- `hoyo.artifactIconBaseUrl` — primary relic CDN for `UI_RelicIcon_*.png` (Enka)
+- `hoyo.artifactIconFallbackBaseUrl` — secondary relic CDN (HoYoLab)
+- `hoyo.weaponIconBaseUrl` — primary weapon CDN for `UI_EquipIcon_*.png` (Enka)
+- `hoyo.weaponIconFallbackBaseUrl` — secondary weapon CDN
+- `hoyo.characterIconBaseUrl` — primary avatar CDN (Enka)
+- `hoyo.characterIconFallbackBaseUrl` — secondary avatar CDN (HoYoLab)
 - `hoyo.bbsApiBase` + `hoyo.characterListPath` — modern roster endpoint
 - `genshinDev.*` — catalog base URL, timeout, cache TTL
 - `security.allowedExternalHosts` — `shell.openExternal`
-- `security.allowedImageHosts` — CSP `img-src` (supports `*.` wildcards)
+- `security.allowedImageHosts` — CSP `img-src` (must include `enka.network`; supports `*.` wildcards)
 - `auth.passwordPolicy` / lockout / idle timeout / bcrypt rounds
 
 Native window chrome is off by default (`window.frame: false`). The React title bar handles drag and window controls.
@@ -116,7 +128,7 @@ Under Electron `userData` (folder name from `userDataDirName`, default `leyline-
 - macOS: `~/Library/Application Support/leyline-reader/`
 - Linux: `~/.config/leyline-reader/`
 
-HoYoverse cookies are encrypted with OS `safeStorage` before write. The renderer never receives cookie values. UI theme preference is stored in localStorage (`leyline-theme`) via `next-themes`, not in the vault.
+HoYoverse cookies and GOOD inventories are encrypted with OS `safeStorage` before write. The renderer never receives cookie values. UI theme preference is stored in localStorage (`leyline-theme`) via `next-themes`, not in the vault.
 
 ## Security
 
@@ -129,18 +141,59 @@ Contributor rules: [`AGENTS.md`](AGENTS.md). Aligns with:
 
 Highlights: sandboxed renderers, context isolation, no Node in the renderer, trusted IPC + Zod, navigation / external-open allowlists, session CSP, bcrypt vault + lockout + idle lock, isolated HoYo login partition cleared after capture.
 
+## Credits & acknowledgements
+
+Leyline Reader is built on open-source software and community game-data resources. Thank you to the maintainers and contributors of:
+
+### Application framework & tooling
+
+- [Electron](https://www.electronjs.org/) — desktop shell
+- [Vite](https://vite.dev/) and [vite-plugin-electron](https://github.com/electron-vite/vite-plugin-electron) — bundling / HMR
+- [TypeScript](https://www.typescriptlang.org/), [ESLint](https://eslint.org/), [dependency-cruiser](https://github.com/sverweij/dependency-cruiser), [electron-builder](https://www.electron.build/)
+
+### UI
+
+- [React](https://react.dev/) and [React Router](https://reactrouter.com/)
+- [Tailwind CSS](https://tailwindcss.com/) and [shadcn/ui](https://ui.shadcn.com/) (Radix primitives, `@shadcn/lint`)
+- [Phosphor Icons](https://phosphoricons.com/), [next-themes](https://github.com/pacocoursey/next-themes), [Sonner](https://sonner.emilkowal.ski/), [Inter](https://rsms.me/inter/) via Fontsource
+- [class-variance-authority](https://cva.style/), [clsx](https://github.com/lukeed/clsx) / project `cn` helpers
+
+### Local security & config
+
+- [Zod](https://zod.dev/), [bcryptjs](https://github.com/dcodeIO/bcrypt.js), [electron-store](https://github.com/sindresorhus/electron-store), Electron OS [`safeStorage`](https://www.electronjs.org/docs/latest/api/safe-storage)
+
+### Genshin / HoYoverse data (unofficial)
+
+- [hoyoapi](https://github.com/vermaysha/hoyoapi) ([VerMaySha](https://github.com/vermaysha)) — HoYoLab Battle Chronicle client used for linked-account sync
+- [genshin.dev](https://genshin.dev/) — optional static character catalog enrichment
+- [Enka.Network](https://enka.network/) — primary public CDN for character, relic, and weapon UI icons (`/ui/UI_AvatarIcon_*`, `/ui/UI_RelicIcon_*`, `/ui/UI_EquipIcon_*`)
+- HoYoLab / miHoYo upload hosts — fallback icon CDN and official Battle Chronicle APIs accessed via the user’s own login (not scraped accounts)
+- [Genshin Optimizer](https://frzyc.github.io/genshin-optimizer/) / [frzyc/genshin-optimizer](https://github.com/frzyc/genshin-optimizer), [Irminsul](https://github.com/konkers/irminsul/releases), and the wider scanner community — **GOOD** (Genshin Open Object Description) inventory interchange format
+- [Moegirl Encyclopedia](https://zh.moegirl.org.cn/) Genshin community color references — element / rarity accent tokens in CSS (not official miHoYo assets)
+
+Game assets and trademarks belong to their respective owners (miHoYo / HoYoverse / Cognosphere). Icon and API usage is for personal, non-commercial fan tooling.
+
+### Security references
+
+Guidance used when designing vault / IPC / CSP controls:
+
+- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
+- [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/)
+- [OWASP TCASVS](https://owasp.org/TCASVS/)
+- [Electron Security Tutorial](https://www.electronjs.org/docs/latest/tutorial/security)
+
 ## Documentation & agent skills
 
 | Doc / skill | Purpose |
 | --- | --- |
 | [`AGENTS.md`](AGENTS.md) | Mandatory conventions + security for humans and coding agents |
-| [`docs/architecture.md`](docs/architecture.md) | Layered architecture + cache notes |
-| [`TODO.md`](TODO.md) | Backlog (materials/artifacts spike, etc.) |
+| [`docs/architecture.md`](docs/architecture.md) | Layered architecture + cache / icon notes |
+| [`TODO.md`](TODO.md) | Backlog (grind planners, icon maps, Enka API, etc.) |
 | [`.agents/skills/shadcn`](.agents/skills/shadcn/SKILL.md) | shadcn/ui composition and lint rules |
 | [`.cursor/skills/leyline-hoyoapi`](.cursor/skills/leyline-hoyoapi/SKILL.md) | HoYoLab / hoyoapi quirks |
-| [`.cursor/skills/leyline-genshin-dev`](.cursor/skills/leyline-genshin-dev/SKILL.md) | genshin.dev enrichment |
+| [`.cursor/skills/leyline-genshin-dev`](.cursor/skills/leyline-genshin-dev/SKILL.md) | genshin.dev enrichment + Enka icon resolution |
 | [`.cursor/skills/leyline-electron-ipc`](.cursor/skills/leyline-electron-ipc/SKILL.md) | IPC, vault, login window |
 
 ## License
 
-MIT — see [`package.json`](package.json).
+MIT — see [`package.json`](package.json). Third-party libraries retain their own licenses. Game data and imagery remain property of their respective rights holders.

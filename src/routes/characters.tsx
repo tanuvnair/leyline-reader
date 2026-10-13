@@ -1,5 +1,5 @@
 import {useEffect, useMemo} from 'react';
-import {Link, useSearchParams} from 'react-router-dom';
+import {useSearchParams} from 'react-router-dom';
 import {toast} from 'sonner';
 import {
   ArrowsClockwiseIcon,
@@ -10,14 +10,6 @@ import {
 } from '@phosphor-icons/react';
 import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
 import {Button} from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {Avatar, AvatarFallback, AvatarImage} from '@/components/ui/avatar';
 import {
   Empty,
   EmptyDescription,
@@ -40,12 +32,12 @@ import {
   AccountGate,
   isNotLinkedError,
 } from '@/components/account-setup-empty';
+import {InventoryItemCard} from '@/components/inventory-item-card';
 import {Page, PageHeading} from '@/components/page-heading';
 import {
   CharacterFiltersSkeleton,
   CharacterRosterCardSkeleton,
 } from '@/components/page-skeletons';
-import {RarityStars} from '@/components/rarity-stars';
 import {StatChip} from '@/components/stat-chip';
 import {
   useCharacterRoster,
@@ -60,7 +52,6 @@ import {
   friendshipBand,
   normalizeElement,
   normalizeWeapon,
-  rarityAccent,
   type CharacterSort,
   type GenshinElement,
 } from '@/lib/genshin-visuals';
@@ -276,73 +267,52 @@ function CharactersLinked() {
               meta?.vision ?? character.element,
             );
             const rarity = meta?.rarity ?? character.rarity;
-            const accent = rarityAccent(rarity);
             const key = characterRouteKey(character);
             const search = searchParams.toString();
             const avatarSrc = characterAvatarSrc(character, meta);
+            const href = `/characters/${key}${search ? `?${search}` : ''}`;
             return (
-              <div
+              <InventoryItemCard
                 key={`${character.id ?? name}-${character.level}`}
-                className="h-full *:h-full"
-              >
-                <Card size="sm" data-rarity={accent ?? undefined}>
-                  <CardHeader>
-                    <Link
-                      to={{
-                        pathname: `/characters/${key}`,
-                        search: search ? `?${search}` : '',
-                      }}
-                      className="flex flex-row items-start gap-4"
+                title={name}
+                description={meta?.title ?? 'Character'}
+                rarity={rarity}
+                icon={avatarSrc}
+                emptyFallback={name.slice(0, 2)}
+                to={href}
+                chips={
+                  <>
+                    <StatChip kind="plain">
+                      Lv. {character.level ?? '—'}
+                    </StatChip>
+                    <StatChip
+                      kind="constellation"
+                      band={constellationBand(
+                        character.actived_constellation_num,
+                      )}
+                      icon={SparkleIcon}
                     >
-                      <Avatar size="lg">
-                        {avatarSrc ? (
-                          <AvatarImage src={avatarSrc} alt={name} />
-                        ) : null}
-                        <AvatarFallback>{name.slice(0, 2)}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex min-w-0 flex-col gap-1">
-                        <CardTitle>{name}</CardTitle>
-                        <CardDescription>
-                          {meta?.title ?? character.element ?? 'Traveler'}
-                        </CardDescription>
-                        {rarity ? <RarityStars rarity={rarity} /> : null}
-                      </div>
-                    </Link>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
+                      C{character.actived_constellation_num ?? 0}
+                    </StatChip>
+                    <StatChip
+                      kind="friendship"
+                      band={friendshipBand(character.fetter)}
+                      icon={HeartIcon}
+                    >
+                      {character.fetter ?? '—'}
+                    </StatChip>
+                    <StatChip kind="element" element={elementKey}>
+                      {elementKey.charAt(0).toUpperCase() +
+                        elementKey.slice(1)}
+                    </StatChip>
+                    {meta?.weapon || character.weapon ? (
                       <StatChip kind="plain">
-                        Lv. {character.level ?? '—'}
+                        {meta?.weapon ?? character.weapon}
                       </StatChip>
-                      <StatChip
-                        kind="constellation"
-                        band={constellationBand(
-                          character.actived_constellation_num,
-                        )}
-                        icon={SparkleIcon}
-                      >
-                        C{character.actived_constellation_num ?? 0}
-                      </StatChip>
-                      <StatChip
-                        kind="friendship"
-                        band={friendshipBand(character.fetter)}
-                        icon={HeartIcon}
-                      >
-                        {character.fetter ?? '—'}
-                      </StatChip>
-                      <StatChip kind="element" element={elementKey}>
-                        {elementKey.charAt(0).toUpperCase() +
-                          elementKey.slice(1)}
-                      </StatChip>
-                      {meta?.weapon || character.weapon ? (
-                        <StatChip kind="plain">
-                          {meta?.weapon ?? character.weapon}
-                        </StatChip>
-                      ) : null}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                    ) : null}
+                  </>
+                }
+              />
             );
           })}
         </div>

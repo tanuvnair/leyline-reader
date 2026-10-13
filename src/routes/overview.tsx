@@ -41,6 +41,7 @@ import {StatChip} from '@/components/stat-chip';
 import {useHoyoAccount} from '@/hooks/use-hoyo-account';
 import {getLeyline} from '@/lib/leyline';
 import {worldStatVisual} from '@/lib/genshin-visuals';
+import {formatWorldStatChip} from '@/lib/text-labels';
 
 interface OverviewData {
   account: {
@@ -258,7 +259,7 @@ function OverviewLinked() {
         />
         <MetricCard
           metric="commission"
-          title="Daily commissions"
+          title="Daily Commissions"
           muted={notesMissing}
           icon={ListChecksIcon}
           value={
@@ -290,7 +291,7 @@ function OverviewLinked() {
 
       <Card>
         <CardHeader>
-          <CardTitle>World progress</CardTitle>
+          <CardTitle>World Progress</CardTitle>
           <CardDescription>Highlights from your game record</CardDescription>
         </CardHeader>
         <CardContent>
@@ -312,7 +313,7 @@ function OverviewLinked() {
                 .slice(0, 12)
                 .map(([key, value]) => {
                   const visual = worldStatVisual(key);
-                  const label = `${key.replaceAll('_', ' ')}: ${String(value)}`;
+                  const label = formatWorldStatChip(key, value);
                   if (visual.kind === 'element' && visual.element) {
                     return (
                       <StatChip

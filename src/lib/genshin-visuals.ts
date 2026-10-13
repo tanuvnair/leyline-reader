@@ -86,12 +86,18 @@ export function friendshipBand(
   return 'low';
 }
 
-export function rarityAccent(rarity: number | null | undefined): 4 | 5 | null {
-  if (rarity === 5) {
-    return 5;
-  }
-  if (rarity === 4) {
-    return 4;
+/** Accent band for Card `data-rarity` (1–5 stars). */
+export function rarityAccent(
+  rarity: number | null | undefined,
+): 1 | 2 | 3 | 4 | 5 | null {
+  if (
+    rarity === 5 ||
+    rarity === 4 ||
+    rarity === 3 ||
+    rarity === 2 ||
+    rarity === 1
+  ) {
+    return rarity;
   }
   return null;
 }
@@ -233,3 +239,4 @@ export function characterAvatarSrc(
   }
   return undefined;
 }
+

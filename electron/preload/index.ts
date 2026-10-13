@@ -30,6 +30,12 @@ const leylineApi = {
     abyss: (scheduleType?: 1 | 2, options?: {force?: boolean}) =>
       ipcRenderer.invoke(IpcChannels.DATA_ABYSS, scheduleType, options),
   },
+  inventory: {
+    status: () => ipcRenderer.invoke(IpcChannels.GOOD_INVENTORY_STATUS),
+    import: (jsonText: string) =>
+      ipcRenderer.invoke(IpcChannels.GOOD_INVENTORY_IMPORT, jsonText),
+    clear: () => ipcRenderer.invoke(IpcChannels.GOOD_INVENTORY_CLEAR),
+  },
   window: {
     minimize: () => ipcRenderer.invoke(IpcChannels.WINDOW_MINIMIZE),
     maximize: () =>

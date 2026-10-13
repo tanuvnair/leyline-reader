@@ -10,6 +10,7 @@ description: >-
 - Channels live in `electron/ipc/channels.ts` and must stay aligned with `electron/preload/index.ts`.
 - Register handlers in `electron/ipc/register.ts` stay thin: validate sender + Zod → call Application use cases. Never expose raw cookies to the renderer.
 - Cookie capture: `electron/infrastructure/hoyolab/login.ts` (Application persists via vault).
-- Vault encryption: `electron/infrastructure/vault/vault.ts` (`safeStorage`).
+- Vault encryption: `electron/infrastructure/vault/vault.ts` (`safeStorage`) for HoYo cookies and GOOD inventory.
+- GOOD inventory: `GOOD_INVENTORY_STATUS` / `GOOD_INVENTORY_IMPORT` / `GOOD_INVENTORY_CLEAR` (unlock-gated; not HoYo `DATA_*`). Preload: `leyline.inventory.*`.
 - Use cases: `electron/application/`. Domain ports: `electron/domain/ports/`.
 - After API changes, update `electron/preload/index.d.ts` / `window.leyline` typings.

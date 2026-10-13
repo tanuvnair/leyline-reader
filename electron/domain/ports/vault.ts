@@ -1,4 +1,5 @@
 import type {HoyoCookiePayload, LinkedAccountMeta} from '../account/types';
+import type {GoodInventory} from '../good/inventory';
 
 /** Persistence port for vault secrets and linked-account metadata. */
 export interface VaultPort {
@@ -11,4 +12,8 @@ export interface VaultPort {
   hasHoyoCookie(): boolean;
   saveAccount(account: LinkedAccountMeta): void;
   getAccount(): LinkedAccountMeta | null;
+  saveGoodInventory(inventory: GoodInventory): void;
+  loadGoodInventory(): GoodInventory | null;
+  clearGoodInventory(): void;
+  hasGoodInventory(): boolean;
 }
