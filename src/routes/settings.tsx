@@ -1,4 +1,5 @@
 import {useEffect, useState} from 'react';
+import {useTheme} from 'next-themes';
 import {toast} from 'sonner';
 import {Spinner} from '@/components/ui/spinner';
 import {Button} from '@/components/ui/button';
@@ -19,6 +20,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field';
+import {ToggleGroup, ToggleGroupItem} from '@/components/ui/toggle-group';
 import {Page, PageHeading} from '@/components/page-heading';
 import {PasswordInput} from '@/components/password-input';
 import {useHoyoAccount} from '@/hooks/use-hoyo-account';
@@ -42,6 +44,8 @@ export function SettingsPage() {
     account,
     refresh: refreshAccount,
   } = useHoyoAccount();
+  const {theme, setTheme} = useTheme();
+  const [themeReady, setThemeReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [configLoading, setConfigLoading] = useState(true);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -54,6 +58,10 @@ export function SettingsPage() {
     requireNumber: true,
     requireSpecial: false,
   });
+
+  useEffect(() => {
+    setThemeReady(true);
+  }, []);
 
   useEffect(() => {
     void getLeyline()
@@ -152,6 +160,48 @@ export function SettingsPage() {
           )
         }
       />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Appearance</CardTitle>
+          <CardDescription>
+            Light, dark, or follow the system preference.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Field>
+            <FieldLabel>Theme</FieldLabel>
+            {themeReady ? (
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                value={theme ?? 'system'}
+                onValueChange={(value) => {
+                  if (value) {
+                    setTheme(value);
+                  }
+                }}
+              >
+                <ToggleGroupItem value="light">Light</ToggleGroupItem>
+                <ToggleGroupItem value="dark">Dark</ToggleGroupItem>
+                <ToggleGroupItem value="system">System</ToggleGroupItem>
+              </ToggleGroup>
+            ) : (
+              <div className="flex h-9 w-64 gap-2">
+                <div className="h-9 flex-1">
+                  <Skeleton />
+                </div>
+                <div className="h-9 flex-1">
+                  <Skeleton />
+                </div>
+                <div className="h-9 flex-1">
+                  <Skeleton />
+                </div>
+              </div>
+            )}
+          </Field>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

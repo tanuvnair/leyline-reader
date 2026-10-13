@@ -27,7 +27,9 @@
     ],
     "sessionPartition": "persist:hoyolab-login",
     "successUrlPatterns": ["hoyolab.com/account", "hoyolab.com/home", "account.hoyoverse.com"],
-    "language": "en-us"
+    "language": "en-us",
+    "cacheTtlMs": 300000,
+    "characterIconBaseUrl": "https://upload-os-bbs.mihoyo.com/game_record/genshin/character_icon"
   },
   "genshinDev": {
     "baseUrl": "https://api.genshin.dev",
@@ -69,6 +71,15 @@
       "mihoyo.com",
       "genshin.dev",
       "api.genshin.dev"
+    ],
+    "allowedImageHosts": [
+      "api.genshin.dev",
+      "*.genshin.dev",
+      "*.mihoyo.com",
+      "upload-bbs.mihoyo.com",
+      "upload-os-bbs.mihoyo.com",
+      "*.hoyoverse.com",
+      "*.hoyolab.com"
     ]
   },
   "features": {

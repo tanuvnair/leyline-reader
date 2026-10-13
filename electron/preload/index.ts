@@ -23,10 +23,12 @@ const leylineApi = {
     unlink: () => ipcRenderer.invoke(IpcChannels.HOYO_UNLINK),
   },
   data: {
-    overview: () => ipcRenderer.invoke(IpcChannels.DATA_OVERVIEW),
-    characters: () => ipcRenderer.invoke(IpcChannels.DATA_CHARACTERS),
-    abyss: (scheduleType?: 1 | 2) =>
-      ipcRenderer.invoke(IpcChannels.DATA_ABYSS, scheduleType),
+    overview: (options?: {force?: boolean}) =>
+      ipcRenderer.invoke(IpcChannels.DATA_OVERVIEW, options),
+    characters: (options?: {force?: boolean}) =>
+      ipcRenderer.invoke(IpcChannels.DATA_CHARACTERS, options),
+    abyss: (scheduleType?: 1 | 2, options?: {force?: boolean}) =>
+      ipcRenderer.invoke(IpcChannels.DATA_ABYSS, scheduleType, options),
   },
   window: {
     minimize: () => ipcRenderer.invoke(IpcChannels.WINDOW_MINIMIZE),

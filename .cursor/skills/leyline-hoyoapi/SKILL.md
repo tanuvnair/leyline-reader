@@ -17,6 +17,6 @@ description: >-
 
 ## Endpoint quirks (do not regress)
 
-- **Characters:** HoYoLab moved the roster to `POST …/character/list` (`data.list`). hoyoapi@1.x still calls legacy `/character` (`data.avatars`). Leyline hits the modern path first via `client.request`, then falls back to legacy + index avatars.
+- **Characters:** HoYoLab moved the roster to `POST …/character/list` (`data.list`). hoyoapi@1.x still calls legacy `/character` (`data.avatars`). Leyline hits the modern path first via `client.request`, then falls back to legacy + index avatars. Modern list often omits weapon type — merge `weapon.type_name` / `weapon_type_name` from legacy when missing so Characters weapon filter works without genshin.dev.
 - **Daily note:** Often fails with “Data is not public” until the user enables Real-Time Notes in the HoYoLAB app (Battle Chronicle). Never swallow this — return `dailyNoteError` for the Overview alert, and link `hoyo.realTimeNotesUrl` from public config (opens via allowlisted external navigation).
 - **Abyss:** `schedule_type` 1 = current, 2 = previous. Empty previous cycles (`0-0` / locked) are valid when the player did not play that half.

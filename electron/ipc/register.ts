@@ -25,6 +25,11 @@ import {IpcChannels} from './channels';
 
 const passwordSchema = z.string().min(1).max(256);
 const abyssScheduleSchema = z.union([z.literal(1), z.literal(2)]).default(1);
+const dataFetchOptionsSchema = z
+  .object({
+    force: z.boolean().optional(),
+  })
+  .default({});
 
 function withSecurity<TArgs extends unknown[], TResult>(
   handler: (event: IpcMainInvokeEvent, ...args: TArgs) => TResult | Promise<TResult>,
@@ -135,9 +140,10 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
 
   ipcMain.handle(
     IpcChannels.DATA_OVERVIEW,
-    withSecurity(async () => {
+    withSecurity(async (_event, options: unknown) => {
       try {
-        return await getOverview();
+        const {force} = dataFetchOptionsSchema.parse(options ?? {});
+        return await getOverview({force});
       } catch (error) {
         const message = redactError(error).message;
         if (message === NOT_LINKED) {
@@ -150,9 +156,10 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
 
   ipcMain.handle(
     IpcChannels.DATA_CHARACTERS,
-    withSecurity(async () => {
+    withSecurity(async (_event, options: unknown) => {
       try {
-        return await getCharacters();
+        const {force} = dataFetchOptionsSchema.parse(options ?? {});
+        return await getCharacters({force});
       } catch (error) {
         const message = redactError(error).message;
         if (message === NOT_LINKED) {
@@ -165,10 +172,11 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
 
   ipcMain.handle(
     IpcChannels.DATA_ABYSS,
-    withSecurity(async (_event, scheduleType: unknown) => {
+    withSecurity(async (_event, scheduleType: unknown, options: unknown) => {
       try {
         const schedule = abyssScheduleSchema.parse(scheduleType ?? 1);
-        return await getAbyss(schedule);
+        const {force} = dataFetchOptionsSchema.parse(options ?? {});
+        return await getAbyss(schedule, {force});
       } catch (error) {
         const message = redactError(error).message;
         if (message === NOT_LINKED) {

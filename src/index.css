@@ -82,6 +82,75 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /*
+   * Genshin visual tokens — community Moegirl {{Genshincolor}} palette
+   * (原色 / 一种 / 二种 / 三种). Approximations of in-game UI accents for fan UIs;
+   * not an official HoYoverse design-token sheet.
+   */
+  --genshin-pyro: #ec4923;
+  --genshin-pyro-bright: #ff613c;
+  --genshin-pyro-soft: #fff0ed;
+  --genshin-pyro-deep: #e53d29;
+  --genshin-hydro: #498fcc;
+  --genshin-hydro-bright: #4ba2eb;
+  --genshin-hydro-soft: #eef4fe;
+  --genshin-hydro-deep: #0086d2;
+  --genshin-anemo: #359697;
+  --genshin-anemo-bright: #29abad;
+  --genshin-anemo-soft: #eaf6f5;
+  --genshin-anemo-deep: #009397;
+  --genshin-electro: #6957c2;
+  --genshin-electro-bright: #7b66e2;
+  --genshin-electro-soft: #f7f1ff;
+  --genshin-electro-deep: #5e45d2;
+  --genshin-dendro: #66ad16;
+  --genshin-dendro-bright: #72c83e;
+  --genshin-dendro-soft: #f1f6e5;
+  --genshin-dendro-deep: #4aa400;
+  --genshin-cryo: #35aacc;
+  --genshin-cryo-bright: #30bce6;
+  --genshin-cryo-soft: #ebf5fa;
+  --genshin-cryo-deep: #00a6ce;
+  --genshin-geo: #cc9046;
+  --genshin-geo-bright: #e7a046;
+  --genshin-geo-soft: #fff1e6;
+  --genshin-geo-deep: #cf8620;
+  --genshin-none: #939393;
+  --genshin-none-bright: #abaeaf;
+  --genshin-none-soft: #f3f3f3;
+  --genshin-none-deep: #929797;
+
+  --genshin-rarity-1: #85949c;
+  --genshin-rarity-2: #649c74;
+  --genshin-rarity-3: #54a4b4;
+  --genshin-rarity-4: #9174a9;
+  --genshin-rarity-5: #dca454;
+  --genshin-rarity-premium: #c47b12;
+
+  --genshin-resin: #35aacc;
+  --genshin-resin-bright: #30bce6;
+  --genshin-resin-soft: #ebf5fa;
+  --genshin-commission: #66ad16;
+  --genshin-commission-bright: #72c83e;
+  --genshin-commission-soft: #f1f6e5;
+  --genshin-expedition: #359697;
+  --genshin-expedition-bright: #29abad;
+  --genshin-expedition-soft: #eaf6f5;
+  --genshin-achievement: #dca454;
+  --genshin-achievement-soft: #fff6e8;
+  --genshin-abyss: #6957c2;
+  --genshin-abyss-deep: #5e45d2;
+  --genshin-abyss-soft: #f7f1ff;
+  --genshin-star: #dca454;
+  --genshin-star-empty: #939393;
+  --genshin-chest-soft: #fff1e6;
+  --genshin-chest: #cc9046;
+
+  --genshin-friendship-low: #f8c8d8;
+  --genshin-friendship-mid: #f09bb3;
+  --genshin-friendship-high: #e85a7a;
+  --genshin-friendship-max: #d43d62;
 }
 
 .dark {
@@ -116,11 +185,224 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  --genshin-pyro-soft: color-mix(in oklab, #ec4923 22%, oklch(0.205 0 0));
+  --genshin-hydro-soft: color-mix(in oklab, #498fcc 22%, oklch(0.205 0 0));
+  --genshin-anemo-soft: color-mix(in oklab, #359697 22%, oklch(0.205 0 0));
+  --genshin-electro-soft: color-mix(in oklab, #6957c2 22%, oklch(0.205 0 0));
+  --genshin-dendro-soft: color-mix(in oklab, #66ad16 22%, oklch(0.205 0 0));
+  --genshin-cryo-soft: color-mix(in oklab, #35aacc 22%, oklch(0.205 0 0));
+  --genshin-geo-soft: color-mix(in oklab, #cc9046 22%, oklch(0.205 0 0));
+  --genshin-none-soft: color-mix(in oklab, #939393 18%, oklch(0.205 0 0));
+  --genshin-resin-soft: color-mix(in oklab, #35aacc 22%, oklch(0.205 0 0));
+  --genshin-commission-soft: color-mix(in oklab, #66ad16 22%, oklch(0.205 0 0));
+  --genshin-expedition-soft: color-mix(in oklab, #359697 22%, oklch(0.205 0 0));
+  --genshin-achievement-soft: color-mix(in oklab, #dca454 20%, oklch(0.205 0 0));
+  --genshin-abyss-soft: color-mix(in oklab, #6957c2 22%, oklch(0.205 0 0));
+  --genshin-chest-soft: color-mix(in oklab, #cc9046 20%, oklch(0.205 0 0));
+  --genshin-friendship-low: color-mix(in oklab, #f8c8d8 35%, oklch(0.205 0 0));
+  --genshin-friendship-mid: color-mix(in oklab, #f09bb3 40%, oklch(0.205 0 0));
+  --genshin-friendship-high: #e85a7a;
+  --genshin-friendship-max: #f06b88;
+}
+
+/*
+ * Domain accents for Genshin data. Cards keep shadcn surfaces (bg-card);
+ * only border-inline-start + CardAction tint carry metric/rarity color.
+ * Soft fills apply to Badge chips only (data-genshin-chip on [data-slot=badge]).
+ */
+[data-slot='card'][data-metric] {
+  --genshin-metric-accent: var(--genshin-none);
+  border-inline-start: 3px solid var(--genshin-metric-accent);
+}
+
+[data-slot='card'][data-metric='resin'] {
+  --genshin-metric-accent: var(--genshin-resin);
+}
+[data-slot='card'][data-metric='commission'] {
+  --genshin-metric-accent: var(--genshin-commission);
+}
+[data-slot='card'][data-metric='expedition'] {
+  --genshin-metric-accent: var(--genshin-expedition);
+}
+[data-slot='card'][data-metric='achievement'] {
+  --genshin-metric-accent: var(--genshin-achievement);
+}
+[data-slot='card'][data-metric='abyss'] {
+  --genshin-metric-accent: var(--genshin-abyss);
+}
+[data-slot='card'][data-metric='stars'] {
+  --genshin-metric-accent: var(--genshin-star);
+}
+[data-slot='card'][data-metric='battles'] {
+  --genshin-metric-accent: var(--genshin-dendro);
+}
+[data-slot='card'][data-metric='status'] {
+  --genshin-metric-accent: var(--genshin-dendro);
+}
+[data-slot='card'][data-metric='battles'][data-tone='low'],
+[data-slot='card'][data-metric='status'][data-tone='muted'],
+[data-slot='card'][data-metric][data-muted] {
+  --genshin-metric-accent: var(--genshin-none);
+}
+
+[data-slot='card'][data-metric] [data-slot='card-action'] {
+  color: var(--genshin-metric-accent);
+}
+
+[data-slot='card'][data-metric] [data-slot='card-footer'],
+[data-slot='card'][data-footer] [data-slot='card-footer'] {
+  margin-block-start: auto;
+  min-height: 1.5rem;
+}
+
+[data-slot='card'][data-metric][data-footer='rich'] [data-slot='card-footer'],
+[data-slot='card'][data-footer='rich'] [data-slot='card-footer'] {
+  min-height: 3.25rem;
+}
+
+[data-slot='card'][data-rarity='5'] {
+  border-inline-start: 3px solid var(--genshin-rarity-5);
+}
+
+[data-slot='card'][data-rarity='4'] {
+  border-inline-start: 3px solid var(--genshin-rarity-4);
+}
+
+[data-slot='badge'][data-genshin-chip='element'][data-element='pyro'] {
+  background: var(--genshin-pyro-soft);
+  color: var(--genshin-pyro-deep);
+  border-color: color-mix(in oklab, var(--genshin-pyro) 35%, transparent);
+}
+[data-slot='badge'][data-genshin-chip='element'][data-element='hydro'] {
+  background: var(--genshin-hydro-soft);
+  color: var(--genshin-hydro-deep);
+  border-color: color-mix(in oklab, var(--genshin-hydro) 35%, transparent);
+}
+[data-slot='badge'][data-genshin-chip='element'][data-element='anemo'] {
+  background: var(--genshin-anemo-soft);
+  color: var(--genshin-anemo-deep);
+  border-color: color-mix(in oklab, var(--genshin-anemo) 35%, transparent);
+}
+[data-slot='badge'][data-genshin-chip='element'][data-element='electro'] {
+  background: var(--genshin-electro-soft);
+  color: var(--genshin-electro-deep);
+  border-color: color-mix(in oklab, var(--genshin-electro) 35%, transparent);
+}
+[data-slot='badge'][data-genshin-chip='element'][data-element='dendro'] {
+  background: var(--genshin-dendro-soft);
+  color: var(--genshin-dendro-deep);
+  border-color: color-mix(in oklab, var(--genshin-dendro) 35%, transparent);
+}
+[data-slot='badge'][data-genshin-chip='element'][data-element='cryo'] {
+  background: var(--genshin-cryo-soft);
+  color: var(--genshin-cryo-deep);
+  border-color: color-mix(in oklab, var(--genshin-cryo) 35%, transparent);
+}
+[data-slot='badge'][data-genshin-chip='element'][data-element='geo'] {
+  background: var(--genshin-geo-soft);
+  color: var(--genshin-geo-deep);
+  border-color: color-mix(in oklab, var(--genshin-geo) 35%, transparent);
+}
+[data-slot='badge'][data-genshin-chip='element'][data-element='none'] {
+  background: var(--genshin-none-soft);
+  color: var(--genshin-none-deep);
+  border-color: color-mix(in oklab, var(--genshin-none) 35%, transparent);
+}
+
+[data-slot='badge'][data-genshin-chip='rarity'][data-rarity='5'] {
+  background: color-mix(in oklab, var(--genshin-rarity-5) 22%, var(--card));
+  color: var(--genshin-rarity-5);
+  border-color: color-mix(in oklab, var(--genshin-rarity-5) 45%, transparent);
+}
+[data-slot='badge'][data-genshin-chip='rarity'][data-rarity='4'] {
+  background: color-mix(in oklab, var(--genshin-rarity-4) 22%, var(--card));
+  color: var(--genshin-rarity-4);
+  border-color: color-mix(in oklab, var(--genshin-rarity-4) 45%, transparent);
+}
+[data-slot='badge'][data-genshin-chip='rarity'][data-rarity='3'],
+[data-slot='badge'][data-genshin-chip='rarity'][data-rarity='2'],
+[data-slot='badge'][data-genshin-chip='rarity'][data-rarity='1'] {
+  background: var(--genshin-none-soft);
+  color: var(--genshin-none-deep);
+}
+
+[data-slot='badge'][data-genshin-chip='constellation'][data-constellation='low'] {
+  background: color-mix(in oklab, var(--genshin-electro-soft) 70%, transparent);
+  color: var(--genshin-electro);
+}
+[data-slot='badge'][data-genshin-chip='constellation'][data-constellation='mid'] {
+  background: var(--genshin-electro-soft);
+  color: var(--genshin-electro-deep);
+}
+[data-slot='badge'][data-genshin-chip='constellation'][data-constellation='high'] {
+  background: var(--genshin-electro-soft);
+  color: var(--genshin-electro-bright);
+  border-color: color-mix(
+    in oklab,
+    var(--genshin-electro-bright) 45%,
+    transparent
+  );
+}
+[data-slot='badge'][data-genshin-chip='constellation'][data-constellation='max'] {
+  background: color-mix(in oklab, var(--genshin-rarity-5) 18%, var(--card));
+  color: var(--genshin-rarity-5);
+  border-color: color-mix(in oklab, var(--genshin-rarity-5) 45%, transparent);
+}
+
+[data-slot='badge'][data-genshin-chip='friendship'][data-friendship='low'] {
+  background: var(--genshin-friendship-low);
+  color: var(--genshin-friendship-high);
+}
+[data-slot='badge'][data-genshin-chip='friendship'][data-friendship='mid'] {
+  background: var(--genshin-friendship-mid);
+  color: var(--genshin-friendship-high);
+}
+[data-slot='badge'][data-genshin-chip='friendship'][data-friendship='high'] {
+  background: color-mix(
+    in oklab,
+    var(--genshin-friendship-high) 25%,
+    var(--card)
+  );
+  color: var(--genshin-friendship-high);
+}
+[data-slot='badge'][data-genshin-chip='friendship'][data-friendship='max'] {
+  background: color-mix(
+    in oklab,
+    var(--genshin-friendship-max) 30%,
+    var(--card)
+  );
+  color: var(--genshin-friendship-max);
+}
+
+[data-slot='badge'][data-genshin-chip='stat'][data-stat='chest'] {
+  background: var(--genshin-chest-soft);
+  color: var(--genshin-chest);
+  border-color: color-mix(in oklab, var(--genshin-chest) 35%, transparent);
+}
+[data-slot='badge'][data-genshin-chip='stat'][data-stat='achievement'] {
+  background: color-mix(in oklab, var(--genshin-rarity-5) 18%, var(--card));
+  color: var(--genshin-rarity-5);
+  border-color: color-mix(in oklab, var(--genshin-achievement) 40%, transparent);
+}
+
+[data-abyss-stars] {
+  color: var(--muted-foreground);
+}
+[data-abyss-stars] [data-filled] {
+  color: var(--genshin-star);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
   }
   body {
     @apply font-sans antialiased bg-background text-foreground;
@@ -139,9 +421,6 @@
   }
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;
-  }
-  html {
-    @apply font-sans;
   }
 }
 

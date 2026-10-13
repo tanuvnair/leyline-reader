@@ -20,6 +20,7 @@ import {
   SidebarProvider,
 } from '@/components/ui/sidebar';
 import {useAuth} from '@/hooks/use-auth';
+import {CharacterRosterProvider} from '@/hooks/use-character-roster';
 import {HoyoAccountProvider} from '@/hooks/use-hoyo-account';
 
 const navItems = [
@@ -35,6 +36,7 @@ export function AppShell() {
 
   return (
     <HoyoAccountProvider>
+      <CharacterRosterProvider>
       <div className="flex min-h-0 flex-1 items-stretch app-atmosphere">
         <SidebarProvider>
           <Sidebar collapsible="none">
@@ -92,6 +94,7 @@ export function AppShell() {
           </SidebarInset>
         </SidebarProvider>
       </div>
+      </CharacterRosterProvider>
     </HoyoAccountProvider>
   );
 }

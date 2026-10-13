@@ -49,3 +49,19 @@ Process isolation is orthogonal to layering:
 | Overview / characters / abyss | `DATA_*` |
 
 Window minimize/maximize/close stay in Presentation → Electron APIs (no Application proxy).
+
+## HoYo data caching
+
+- **Application TTL cache** (`electron/application/cache/ttl-cache.ts`): keys `overview`, `characters`, `abyss:1`, `abyss:2`; TTL from `hoyo.cacheTtlMs` (default 5 minutes).
+- **Force refresh:** IPC `data.*` accepts `{force?: boolean}`; skips cache read when `force: true`.
+- **Invalidate:** link success / unlink / lock / app quit (also clears on failed link rollback).
+- **genshin.dev:** separate in-memory map in Infrastructure with `genshinDev.cacheTtlMs`. Only attach catalog image URLs when the JSON fetch succeeds.
+- **Renderer:** `CharacterRosterProvider` shares roster + enrichment between Characters list and detail for the unlocked session; force refresh replaces it; clears on unlink/lock (shell unmount).
+
+## Presentation notes
+
+- Routes: Overview, Characters (`#/characters`, `#/characters/:characterKey`), Abyss, Settings (plus Login).
+- Characters filter state: React Router search params (`q`, `element`, `weapon`, `sort`).
+- Theme: `next-themes` in the renderer (`leyline-theme` localStorage); Appearance controls on Settings.
+- Avatars: Domain icon resolution (`electron/domain/hoyo/icons.ts`) + config `hoyo.characterIconBaseUrl`; CSP `img-src` from `security.allowedImageHosts`.
+- Visual accents: Moegirl-aligned CSS tokens in `src/index.css`; compose with shadcn `Card` / `Badge` (`StatChip`, `MetricCard`, `RarityStars`).

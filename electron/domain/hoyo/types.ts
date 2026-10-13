@@ -3,6 +3,8 @@ export interface CharacterDto {
   id?: number;
   name?: string;
   element?: string;
+  /** Weapon type label (Sword, Claymore, …) from HoYoLab when present. */
+  weapon?: string;
   level?: number;
   rarity?: number;
   fetter?: number;

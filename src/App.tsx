@@ -7,6 +7,7 @@ import {RequireAuth} from '@/routes/require-auth';
 import {LoginPage} from '@/routes/login';
 import {OverviewPage} from '@/routes/overview';
 import {CharactersPage} from '@/routes/characters';
+import {CharacterDetailPage} from '@/routes/character-detail';
 import {AbyssPage} from '@/routes/abyss';
 import {SettingsPage} from '@/routes/settings';
 
@@ -21,6 +22,10 @@ export default function App() {
               <Route element={<AppShell />}>
                 <Route index element={<OverviewPage />} />
                 <Route path="characters" element={<CharactersPage />} />
+                <Route
+                  path="characters/:characterKey"
+                  element={<CharacterDetailPage />}
+                />
                 <Route path="abyss" element={<AbyssPage />} />
                 <Route path="settings" element={<SettingsPage />} />
               </Route>

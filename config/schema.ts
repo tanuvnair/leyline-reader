@@ -27,6 +27,9 @@ export const appConfigSchema = z.object({
     sessionPartition: z.string().min(1),
     successUrlPatterns: z.array(z.string().min(1)).min(1),
     language: z.string().min(1),
+    cacheTtlMs: z.number().int().nonnegative(),
+    /** Directory hosting `UI_AvatarIcon_*.png` (no trailing slash required). */
+    characterIconBaseUrl: z.string().url(),
   }),
   genshinDev: z.object({
     baseUrl: z.string().url(),
@@ -55,6 +58,8 @@ export const appConfigSchema = z.object({
   }),
   security: z.object({
     allowedExternalHosts: z.array(z.string().min(1)).min(1),
+    /** Hosts allowed in CSP img-src (supports leading `*.` wildcards). */
+    allowedImageHosts: z.array(z.string().min(1)).min(1),
   }),
   features: z.object({
     overview: z.boolean(),

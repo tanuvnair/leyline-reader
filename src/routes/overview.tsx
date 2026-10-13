@@ -1,6 +1,13 @@
 import {useEffect, useState} from 'react';
 import {toast} from 'sonner';
-import {ArrowsClockwiseIcon, WarningCircleIcon} from '@phosphor-icons/react';
+import {
+  ArrowsClockwiseIcon,
+  FlaskIcon,
+  ListChecksIcon,
+  MapTrifoldIcon,
+  TrophyIcon,
+  WarningCircleIcon,
+} from '@phosphor-icons/react';
 import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
 import {Button} from '@/components/ui/button';
 import {
@@ -15,6 +22,7 @@ import {
   Empty,
   EmptyDescription,
   EmptyHeader,
+  EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
 import {Skeleton} from '@/components/ui/skeleton';
@@ -23,9 +31,16 @@ import {
   AccountGate,
   isNotLinkedError,
 } from '@/components/account-setup-empty';
+import {MetricCard} from '@/components/metric-card';
 import {Page, PageHeading} from '@/components/page-heading';
+import {
+  MetricCardSkeleton,
+  WorldProgressCardSkeleton,
+} from '@/components/page-skeletons';
+import {StatChip} from '@/components/stat-chip';
 import {useHoyoAccount} from '@/hooks/use-hoyo-account';
 import {getLeyline} from '@/lib/leyline';
+import {worldStatVisual} from '@/lib/genshin-visuals';
 
 interface OverviewData {
   account: {
@@ -81,11 +96,11 @@ function OverviewLinked() {
   const [error, setError] = useState<string | null>(null);
   const [realTimeNotesUrl, setRealTimeNotesUrl] = useState<string | null>(null);
 
-  const load = async () => {
+  const load = async (force = false) => {
     setLoading(true);
     setError(null);
     try {
-      const result = await getLeyline().data.overview();
+      const result = await getLeyline().data.overview({force});
       if (!result.ok) {
         const message = result.error ?? 'Failed to load overview';
         if (isNotLinkedError(message)) {
@@ -146,39 +161,12 @@ function OverviewLinked() {
             </Button>
           }
         />
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-4">
           {Array.from({length: 4}).map((_, index) => (
-            <Card key={index}>
-              <CardHeader>
-                <div className="h-4 w-20">
-                  <Skeleton />
-                </div>
-                <div className="h-7 w-28">
-                  <Skeleton />
-                </div>
-              </CardHeader>
-            </Card>
+            <MetricCardSkeleton key={index} />
           ))}
         </div>
-        <Card>
-          <CardHeader>
-            <div className="h-5 w-36">
-              <Skeleton />
-            </div>
-            <div className="h-4 w-56">
-              <Skeleton />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {Array.from({length: 8}).map((_, index) => (
-                <div key={index} className="h-5 w-24">
-                  <Skeleton variant="pill" />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <WorldProgressCardSkeleton />
       </Page>
     );
   }
@@ -190,7 +178,7 @@ function OverviewLinked() {
           title="Overview"
           description="Daily note and world progress for your linked account"
           actions={
-            <Button disabled={loading} onClick={() => void load()}>
+            <Button disabled={loading} onClick={() => void load(true)}>
               <ArrowsClockwiseIcon data-icon="inline-start" />
               Retry
             </Button>
@@ -207,6 +195,7 @@ function OverviewLinked() {
 
   const stats = data?.records?.stats ?? {};
   const daily = data?.dailyNote;
+  const notesMissing = Boolean(data?.dailyNoteError) || !daily;
 
   return (
     <Page>
@@ -221,7 +210,7 @@ function OverviewLinked() {
           <Button
             variant="outline"
             disabled={loading}
-            onClick={() => void load()}
+            onClick={() => void load(true)}
           >
             {loading ? (
               <Spinner data-icon="inline-start" />
@@ -254,9 +243,12 @@ function OverviewLinked() {
         </Alert>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          title="Resin"
+      <div className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
+          metric="resin"
+          title="Original Resin"
+          muted={notesMissing}
+          icon={FlaskIcon}
           value={
             daily
               ? `${daily.current_resin ?? '—'} / ${daily.max_resin ?? '—'}`
@@ -264,24 +256,32 @@ function OverviewLinked() {
           }
           hint={formatDurationSeconds(daily?.resin_recovery_time)}
         />
-        <StatCard
+        <MetricCard
+          metric="commission"
           title="Daily commissions"
+          muted={notesMissing}
+          icon={ListChecksIcon}
           value={
             daily
               ? `${daily.finished_task_num ?? 0} / ${daily.total_task_num ?? 4}`
               : '—'
           }
         />
-        <StatCard
+        <MetricCard
+          metric="expedition"
           title="Expeditions"
+          muted={notesMissing}
+          icon={MapTrifoldIcon}
           value={
             daily
               ? `${daily.current_expedition_num ?? 0} / ${daily.max_expedition_num ?? 5}`
               : '—'
           }
         />
-        <StatCard
+        <MetricCard
+          metric="achievement"
           title="Achievements"
+          icon={TrophyIcon}
           value={String(
             stats['achievement_number'] ?? stats['achievement'] ?? '—',
           )}
@@ -297,6 +297,9 @@ function OverviewLinked() {
           {Object.keys(stats).length === 0 ? (
             <Empty>
               <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <MapTrifoldIcon />
+                </EmptyMedia>
                 <EmptyTitle>No stats available</EmptyTitle>
                 <EmptyDescription>
                   Sync again after linking your account.
@@ -307,39 +310,44 @@ function OverviewLinked() {
             <div className="flex flex-wrap gap-2">
               {Object.entries(stats)
                 .slice(0, 12)
-                .map(([key, value]) => (
-                  <Badge key={key} variant="secondary">
-                    {key.replaceAll('_', ' ')}: {String(value)}
-                  </Badge>
-                ))}
+                .map(([key, value]) => {
+                  const visual = worldStatVisual(key);
+                  const label = `${key.replaceAll('_', ' ')}: ${String(value)}`;
+                  if (visual.kind === 'element' && visual.element) {
+                    return (
+                      <StatChip
+                        key={key}
+                        kind="element"
+                        element={visual.element}
+                      >
+                        {label}
+                      </StatChip>
+                    );
+                  }
+                  if (visual.kind === 'chest') {
+                    return (
+                      <StatChip key={key} kind="stat" stat="chest">
+                        {label}
+                      </StatChip>
+                    );
+                  }
+                  if (visual.kind === 'achievement') {
+                    return (
+                      <StatChip key={key} kind="stat" stat="achievement">
+                        {label}
+                      </StatChip>
+                    );
+                  }
+                  return (
+                    <Badge key={key} variant="secondary">
+                      {label}
+                    </Badge>
+                  );
+                })}
             </div>
           )}
         </CardContent>
       </Card>
     </Page>
-  );
-}
-
-function StatCard({
-  title,
-  value,
-  hint,
-}: {
-  title: string;
-  value: string;
-  hint?: string;
-}) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardDescription>{title}</CardDescription>
-        <CardTitle>{value}</CardTitle>
-      </CardHeader>
-      {hint ? (
-        <CardContent>
-          <CardDescription>{hint}</CardDescription>
-        </CardContent>
-      ) : null}
-    </Card>
   );
 }
