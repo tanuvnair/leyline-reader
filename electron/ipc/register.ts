@@ -9,6 +9,11 @@ import {
   unlock,
 } from '../application/auth/auth-use-cases';
 import {
+  clearGoodInventory,
+  getGoodInventoryStatus,
+  importGoodInventory,
+} from '../application/inventory/good-inventory-use-cases';
+import {
   getAbyss,
   getCharacters,
   getOverview,
@@ -25,6 +30,12 @@ import {IpcChannels} from './channels';
 
 const passwordSchema = z.string().min(1).max(256);
 const abyssScheduleSchema = z.union([z.literal(1), z.literal(2)]).default(1);
+const dataFetchOptionsSchema = z
+  .object({
+    force: z.boolean().optional(),
+  })
+  .default({});
+const goodJsonSchema = z.string().min(1).max(32_000_000);
 
 function withSecurity<TArgs extends unknown[], TResult>(
   handler: (event: IpcMainInvokeEvent, ...args: TArgs) => TResult | Promise<TResult>,
@@ -135,9 +146,10 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
 
   ipcMain.handle(
     IpcChannels.DATA_OVERVIEW,
-    withSecurity(async () => {
+    withSecurity(async (_event, options: unknown) => {
       try {
-        return await getOverview();
+        const {force} = dataFetchOptionsSchema.parse(options ?? {});
+        return await getOverview({force});
       } catch (error) {
         const message = redactError(error).message;
         if (message === NOT_LINKED) {
@@ -150,9 +162,10 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
 
   ipcMain.handle(
     IpcChannels.DATA_CHARACTERS,
-    withSecurity(async () => {
+    withSecurity(async (_event, options: unknown) => {
       try {
-        return await getCharacters();
+        const {force} = dataFetchOptionsSchema.parse(options ?? {});
+        return await getCharacters({force});
       } catch (error) {
         const message = redactError(error).message;
         if (message === NOT_LINKED) {
@@ -165,16 +178,51 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
 
   ipcMain.handle(
     IpcChannels.DATA_ABYSS,
-    withSecurity(async (_event, scheduleType: unknown) => {
+    withSecurity(async (_event, scheduleType: unknown, options: unknown) => {
       try {
         const schedule = abyssScheduleSchema.parse(scheduleType ?? 1);
-        return await getAbyss(schedule);
+        const {force} = dataFetchOptionsSchema.parse(options ?? {});
+        return await getAbyss(schedule, {force});
       } catch (error) {
         const message = redactError(error).message;
         if (message === NOT_LINKED) {
           return {ok: false as const, error: NOT_LINKED};
         }
         return {ok: false as const, error: message};
+      }
+    }),
+  );
+
+  ipcMain.handle(
+    IpcChannels.GOOD_INVENTORY_STATUS,
+    withSecurity(() => {
+      try {
+        return getGoodInventoryStatus();
+      } catch (error) {
+        return {ok: false as const, error: redactError(error).message};
+      }
+    }),
+  );
+
+  ipcMain.handle(
+    IpcChannels.GOOD_INVENTORY_IMPORT,
+    withSecurity((_event, jsonText: unknown) => {
+      try {
+        const payload = goodJsonSchema.parse(jsonText);
+        return importGoodInventory(payload);
+      } catch (error) {
+        return {ok: false as const, error: redactError(error).message};
+      }
+    }),
+  );
+
+  ipcMain.handle(
+    IpcChannels.GOOD_INVENTORY_CLEAR,
+    withSecurity(() => {
+      try {
+        return clearGoodInventory();
+      } catch (error) {
+        return {ok: false as const, error: redactError(error).message};
       }
     }),
   );

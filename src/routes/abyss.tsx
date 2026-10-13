@@ -3,18 +3,12 @@ import {toast} from 'sonner';
 import {
   ArrowsClockwiseIcon,
   CastleTurretIcon,
+  StarIcon,
+  SwordIcon,
   WarningCircleIcon,
 } from '@phosphor-icons/react';
 import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
 import {Button} from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {Badge} from '@/components/ui/badge';
 import {
   Empty,
   EmptyDescription,
@@ -22,16 +16,20 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
-import {Skeleton} from '@/components/ui/skeleton';
 import {Spinner} from '@/components/ui/spinner';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {
   AccountGate,
   isNotLinkedError,
 } from '@/components/account-setup-empty';
+import {MetricCard} from '@/components/metric-card';
 import {Page, PageHeading} from '@/components/page-heading';
+import {MetricCardSkeleton} from '@/components/page-skeletons';
 import {useHoyoAccount} from '@/hooks/use-hoyo-account';
 import {getLeyline} from '@/lib/leyline';
+import {battlesTone} from '@/lib/genshin-visuals';
+
+const ABYSS_STAR_MAX = 36;
 
 interface AbyssData {
   max_floor?: string;
@@ -67,6 +65,25 @@ function formatCycleWindow(abyss: AbyssData): string {
   return 'Cycle window unavailable';
 }
 
+function AbyssStarRow({stars}: {stars: number}) {
+  const filled = Math.max(0, Math.min(ABYSS_STAR_MAX, stars));
+  const segments = 12;
+  const perSegment = ABYSS_STAR_MAX / segments;
+  return (
+    <div className="flex flex-wrap gap-1" data-abyss-stars aria-hidden>
+      {Array.from({length: segments}).map((_, index) => {
+        const threshold = (index + 1) * perSegment;
+        const isFilled = filled >= threshold;
+        return (
+          <span key={index} data-filled={isFilled ? '' : undefined}>
+            <StarIcon weight={isFilled ? 'fill' : 'regular'} />
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 export function AbyssPage() {
   return (
     <AccountGate description="Spiral Abyss needs a linked HoYoverse account.">
@@ -82,11 +99,11 @@ function AbyssLinked() {
   const [abyss, setAbyss] = useState<AbyssData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = async (type: 1 | 2) => {
+  const load = async (type: 1 | 2, force = false) => {
     setLoading(true);
     setError(null);
     try {
-      const result = await getLeyline().data.abyss(type);
+      const result = await getLeyline().data.abyss(type, {force});
       if (!result.ok) {
         const message = result.error ?? 'Failed to load Spiral Abyss';
         if (isNotLinkedError(message)) {
@@ -122,7 +139,7 @@ function AbyssLinked() {
           <Button
             variant="outline"
             disabled={loading}
-            onClick={() => void load(schedule)}
+            onClick={() => void load(schedule, true)}
           >
             {loading ? (
               <Spinner data-icon="inline-start" />
@@ -148,18 +165,9 @@ function AbyssLinked() {
         </TabsList>
         <TabsContent value={String(schedule)}>
           {loading ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-4">
               {Array.from({length: 4}).map((_, index) => (
-                <Card key={index}>
-                  <CardHeader>
-                    <div className="h-4 w-24">
-                      <Skeleton />
-                    </div>
-                    <div className="h-7 w-16">
-                      <Skeleton />
-                    </div>
-                  </CardHeader>
-                </Card>
+                <MetricCardSkeleton key={index} footer="rich" />
               ))}
             </div>
           ) : null}
@@ -187,43 +195,43 @@ function AbyssLinked() {
                 </EmptyHeader>
               </Empty>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <Card>
-                  <CardHeader>
-                    <CardDescription>Deepest floor</CardDescription>
-                    <CardTitle>{abyss.max_floor ?? '—'}</CardTitle>
-                  </CardHeader>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardDescription>Stars</CardDescription>
-                    <CardTitle>{abyss.total_star ?? '—'}</CardTitle>
-                  </CardHeader>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardDescription>Battles (wins / total)</CardDescription>
-                    <CardTitle>
-                      {abyss.total_win_times ?? 0} /{' '}
-                      {abyss.total_battle_times ?? 0}
-                    </CardTitle>
-                  </CardHeader>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardDescription>Status</CardDescription>
-                    <CardTitle>
-                      <Badge
-                        variant={abyss.is_unlock ? 'default' : 'secondary'}
-                      >
-                        {abyss.is_unlock ? 'Unlocked' : 'Locked'}
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription>{formatCycleWindow(abyss)}</CardDescription>
-                  </CardContent>
-                </Card>
+              <div className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <MetricCard
+                  metric="abyss"
+                  title="Deepest floor"
+                  icon={CastleTurretIcon}
+                  value={abyss.max_floor ?? '—'}
+                  footer="rich"
+                />
+                <MetricCard
+                  metric="stars"
+                  title="Stars"
+                  icon={StarIcon}
+                  value={abyss.total_star ?? '—'}
+                  hint={`of ${ABYSS_STAR_MAX}`}
+                  footer="rich"
+                >
+                  <AbyssStarRow stars={abyss.total_star ?? 0} />
+                </MetricCard>
+                <MetricCard
+                  metric="battles"
+                  title="Battles (wins / total)"
+                  icon={SwordIcon}
+                  tone={battlesTone(
+                    abyss.total_win_times ?? 0,
+                    abyss.total_battle_times ?? 0,
+                  )}
+                  value={`${abyss.total_win_times ?? 0} / ${abyss.total_battle_times ?? 0}`}
+                  footer="rich"
+                />
+                <MetricCard
+                  metric="status"
+                  title="Status"
+                  tone={abyss.is_unlock ? undefined : 'muted'}
+                  value={abyss.is_unlock ? 'Unlocked' : 'Locked'}
+                  hint={formatCycleWindow(abyss)}
+                  footer="rich"
+                />
               </div>
             )
           ) : null}

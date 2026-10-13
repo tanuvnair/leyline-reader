@@ -5,6 +5,7 @@ import {
   setupPassword as setupPasswordSession,
   unlock as unlockSession,
 } from '../../infrastructure/auth/session';
+import {clearHoyoDataCache} from '../cache/ttl-cache';
 
 export function getAuthStatus() {
   return getAuthStatusSession();
@@ -22,6 +23,7 @@ export async function unlock(password: string) {
 
 export function lock() {
   lockSession();
+  clearHoyoDataCache();
   return {ok: true as const};
 }
 

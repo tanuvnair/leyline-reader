@@ -2,6 +2,7 @@ import {app, BrowserWindow, Menu} from 'electron';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 import os from 'node:os';
+import {clearHoyoDataCache} from '../application/cache/ttl-cache';
 import {clearSensitiveSessionState} from '../infrastructure/auth/session';
 import {loadConfig} from '../infrastructure/config/load';
 import {hardenDefaultSession} from '../infrastructure/security/session';
@@ -105,6 +106,7 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   clearSensitiveSessionState();
+  clearHoyoDataCache();
   win = null;
   if (process.platform !== 'darwin') {
     app.quit();
@@ -113,6 +115,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   clearSensitiveSessionState();
+  clearHoyoDataCache();
 });
 
 app.on('second-instance', () => {

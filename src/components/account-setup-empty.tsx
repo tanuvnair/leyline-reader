@@ -17,29 +17,35 @@ import {Page} from '@/components/page-heading';
 import {useHoyoAccount} from '@/hooks/use-hoyo-account';
 import {getLeyline} from '@/lib/leyline';
 
-/** Matches the centered empty CTA so status resolution does not flash page chrome. */
+/** Matches AccountSetupEmpty (Empty + media + CTA) so status resolve does not flash. */
 export function AccountSetupSkeleton() {
   return (
     <Page className="min-h-full flex-1 items-center justify-center">
-      <div className="flex w-full max-w-sm flex-col items-center gap-4">
-        <div className="size-12">
-          <Skeleton />
-        </div>
-        <div className="flex w-full flex-col items-center gap-2">
-          <div className="h-6 w-56">
+      <Empty>
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <div className="size-6">
+              <Skeleton variant="circle" />
+            </div>
+          </EmptyMedia>
+          <div className="flex w-full flex-col items-center gap-2">
+            <div className="h-6 w-56">
+              <Skeleton />
+            </div>
+            <div className="h-4 w-full max-w-72">
+              <Skeleton />
+            </div>
+            <div className="h-4 w-48">
+              <Skeleton />
+            </div>
+          </div>
+        </EmptyHeader>
+        <EmptyContent>
+          <div className="h-9 w-44">
             <Skeleton />
           </div>
-          <div className="h-4 w-full max-w-72">
-            <Skeleton />
-          </div>
-          <div className="h-4 w-48">
-            <Skeleton />
-          </div>
-        </div>
-        <div className="h-9 w-36">
-          <Skeleton />
-        </div>
-      </div>
+        </EmptyContent>
+      </Empty>
     </Page>
   );
 }

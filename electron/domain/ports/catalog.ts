@@ -9,6 +9,8 @@ export interface CatalogCharacter {
   birthday?: string;
   constellation?: string;
   iconUrl: string;
+  iconBigUrl?: string;
+  portraitUrl?: string;
   [key: string]: unknown;
 }
 

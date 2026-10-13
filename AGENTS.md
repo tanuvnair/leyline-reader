@@ -15,30 +15,59 @@ After making changes, run `npm run check` and fix **all** errors before finishin
 - **Do not overwrite theme fonts.** Use only fonts/tokens from the active shadcn preset (`font-sans`, `font-heading`, etc.). Never add custom display fonts (e.g. Palatino) or replace Inter/preset imports unless the user explicitly changes the preset.
 - **No ad-hoc color on chrome.** Page titles / title-bar labels use `font-heading` (+ size), not forced `text-primary`. Page titles are `text-3xl font-semibold tracking-tight` via `PageHeading`; card / alert / empty titles stay `font-medium`. Prefer CardFooter / FieldDescription / Badge variants over `mt-*` patches, raw `<p className="text-xs…">`, or unused custom Button variants.
 - Prefer generated shadcn components and the preset’s icon library (`phosphor` for current preset) over hand-rolled UI.
-- shadcn agent skills live under [`.agents/skills/shadcn`](.agents/skills/shadcn) (and Cursor copies). Read them when adding/changing UI.
+- shadcn agent skills live under [`.agents/skills/shadcn`](.agents/skills/shadcn) (and Cursor copies). Read them when adding/changing UI. Project-specific skills: [`.cursor/skills/leyline-hoyoapi`](.cursor/skills/leyline-hoyoapi/SKILL.md), [`.cursor/skills/leyline-genshin-dev`](.cursor/skills/leyline-genshin-dev/SKILL.md), [`.cursor/skills/leyline-electron-ipc`](.cursor/skills/leyline-electron-ipc/SKILL.md).
 - Theme/preset: `components.json` uses preset `b1Z5bbUiQ` (`radix-vega`, RTL-ready, pointer cursors). Do **not** run `shadcn init --template next` in this repo — it is Electron + Vite, not Next.js.
+- **Appearance:** [`next-themes`](https://github.com/pacocoursey/next-themes) `ThemeProvider` in [`src/main.tsx`](src/main.tsx) (`attribute="class"`, `defaultTheme="system"`, `enableSystem`, `disableTransitionOnChange`, `storageKey="leyline-theme"`). Pre-paint class sync lives in [`index.html`](index.html). Settings Appearance card uses `ToggleGroup` Light / Dark / System. Outline `Button` / `Toggle` must keep explicit `text-foreground` so labels do not vanish mid-switch. Theme is localStorage only (not the Electron vault) unless product changes that.
 - `DirectionProvider` wraps the app (`ltr` by default). Keep `components.json` `"rtl": true` so new components stay RTL-compatible.
-- Use npm scripts only (`dev`, `build`, `package`, `lint`, `typecheck`, `check`, `clean`). No Taskfile.
+- Use npm scripts only (`dev`, `build`, `package`, `lint`, `lint:deps`, `typecheck`, `check`, `clean`). No Taskfile. `check` = lint + lint:deps + typecheck.
 - TypeScript follows Google TS style. Commits follow Conventional Commits when creating commits.
+- Product backlog / spikes: [`TODO.md`](TODO.md).
 
 ### 1.1 App shell & page layout (mandatory)
 
 These rules exist because mixed “centered card column” vs “full bleed” layouts kept shipping by accident.
 
 - **Dashboard pages are full width** inside the sidebar inset. Use [`src/components/page-heading.tsx`](src/components/page-heading.tsx) `Page` + `PageHeading` on every authenticated route. Do **not** add `max-w-*` / `mx-auto` on `Page` (no centered content column).
-- **Page chrome:** `PageHeading` owns title, optional description, and optional action buttons (Refresh, Retry, etc.). Do not hand-roll a separate heading row per route.
+- **Page chrome:** `PageHeading` owns title, optional description, optional `leading` (e.g. Back beside the title), and optional action buttons (Refresh, Retry, etc.). Do not hand-roll a separate heading row per route. Detail routes put Back in `leading`, not far-right `actions`.
 - **Inset scroll:** use shadcn `ScrollArea` in `AppShell` — not native `overflow-y-auto`. Own flex height on a wrapper (`h-0 min-h-0 flex-1 *:size-full`); do not put layout `className` on `ScrollArea` (`@shadcn/lint`). Put `p-8` on an inner `min-h-full` wrapper that is **not** `flex-1`. A padded `flex-1` child inside overflow is a Chromium bug — bottom padding is dropped from scroll height and the last card sits flush.
 - **Empty / error states:** inline empties (no data in a section) stay under `PageHeading`, top-aligned. **Full-page CTAs** (e.g. account not linked) omit the heading and center in the inset with `Page` + `min-h-full flex-1 items-center justify-center`.
 - **Sidebar:** primary nav in `SidebarContent`; **Lock app** (and similar account actions) only in `SidebarFooter` so they stay pinned to the bottom. Keep the height chain (`#root` → `AppFrame` → shell → `SidebarProvider` → `Sidebar`) filling the window so the footer can sit at the bottom. Use `SidebarMenuButton variant="destructive"` for Lock (no ad-hoc red text classes).
 - **Title bar:** window controls use `Button` variants `titlebar` / `titlebar-close` + size `titlebar` only — equal width hit targets, no ad-hoc spacing classes on the buttons.
 - **Login** (pre-shell) may stay a narrow centered card (`max-w-md`); that exception does not apply inside `AppShell`.
 - **Cards / footers:** use full Card composition (`CardHeader` / `CardContent` / `CardFooter`). Primary form actions belong in `CardFooter`. Default footer has no top rule — card spacing is enough for login/settings. Reserve `CardFooter variant="border"` for denser cards that need a stronger content/actions split. Never put `border-t` / `Separator` as a bare Card child (no horizontal padding → edge-to-edge “weird divider”). `CardFooter` owns bottom padding; never restyle footer spacing from routes.
+- **Inventory / roster cards (mandatory):** Characters, Artifacts, Weapons, and Materials grid cards **must** use [`InventoryItemCard`](src/components/inventory-item-card.tsx) (icons via [`CdnAvatar`](src/components/cdn-avatar.tsx)). Do not hand-roll a parallel Card layout per route.
+
+  | Zone | Owns | Never put here |
+  | --- | --- | --- |
+  | Leading `Avatar` (lg) | Item / character icon | — |
+  | `CardTitle` | Display name only | Levels, counts, rarity text |
+  | `CardDescription` | **One** identity or progress line | Facts also shown as chips / stars |
+  | `RarityStars` | Star band when rarity is known | A second rarity chip |
+  | `CardAction` badges | Status only: Locked (`destructive`), Starred (`secondary`) | Stats (Lv, Ascension, R, count) |
+  | Equipped row | Avatar + name when equipped | Empty / “Unequipped” placeholder |
+  | Chip row (`StatChip`) | Orthogonal facts only | Anything already in description / stars / badges |
+
+  **Per-route description vs chips (no redundancy):**
+
+  | Page | Description | Chips |
+  | --- | --- | --- |
+  | Characters | Catalog title (or short subtitle) — not the same element string as the element chip | Level, constellation, friendship, element, weapon type |
+  | Artifacts | `{slot} · +{level}` | Main + substats only |
+  | Weapons | `Lv {n} · Ascension {a} · R{r}` | Weapon type only |
+  | Materials | `×{count}` | Short category only (omit content if none) |
+
+  Omit `CardContent` entirely when there is no equipped row and no chips. Grid wrappers stay `h-full *:h-full` + `Card size="sm"` + `data-rarity` from `rarityAccent`.
 - **Forms:** always `noValidate` on `<form>`. Never rely on native browser tooltips (`required` / `minLength` constraint UI). Validate in submit handlers and show errors with `Field` + `data-invalid` + `aria-invalid` + `FieldError`. Password rules come from public config `auth.passwordPolicy` via [`src/lib/password-policy.ts`](src/lib/password-policy.ts).
 - **Password fields:** use [`PasswordInput`](src/components/password-input.tsx) (`InputGroup` + `InputGroupInput` + eye toggle). Never hand-position an eye `Button` over a raw `Input`.
 - **Not-linked states** use [`AccountSetupEmpty`](src/components/account-setup-empty.tsx) (Empty + Link HoYoverse CTA), not a red Alert.
 - **HoYoverse link status:** [`HoyoAccountProvider`](src/hooks/use-hoyo-account.tsx) lives in `AppShell` and caches link status for the session. Linked-only routes wrap content in [`AccountGate`](src/components/account-setup-empty.tsx). While status is resolving, show `AccountSetupSkeleton` (empty-shaped). When not linked, show `AccountSetupEmpty` immediately — do **not** flash page headings / data skeletons first (that causes nav flicker).
-- **Loading UX:** use `Skeleton` for content placeholders (size the **parent**; `@shadcn/lint` forbids sizing classes on `Skeleton` itself — use `variant="circle" | "pill"` for shape). Refresh / submit buttons: `disabled` while busy + `Spinner` with `data-icon="inline-start"`. Do not invent custom `animate-pulse` divs or a Button `isLoading` prop.
-- **HoYoLab data quirks:** Character roster uses modern `character/list` (config `hoyo.bbsApiBase` + `hoyo.characterListPath`) because hoyoapi’s legacy `/character` often returns empty. Daily note failures (usually Real-Time Notes disabled) must surface as `dailyNoteError` on Overview — never silent `null` dashes. See [`.cursor/skills/leyline-hoyoapi/SKILL.md`](.cursor/skills/leyline-hoyoapi/SKILL.md).
+- **Loading UX:** use `Skeleton` for content placeholders (size the **parent**; `@shadcn/lint` forbids sizing classes on `Skeleton` itself — use `variant="circle" | "pill"` for shape). Shared layout skeletons live in [`src/components/page-skeletons.tsx`](src/components/page-skeletons.tsx) (`MetricCardSkeleton`, roster/detail/filter/artifact skeletons) — keep them aligned with live MetricCard / Characters / Overview / Abyss / Artifacts composition. Refresh / submit buttons: `disabled` while busy + `Spinner` with `data-icon="inline-start"`. Do not invent custom `animate-pulse` divs or a Button `isLoading` prop.
+- **HoYoLab data quirks:** Character roster uses modern `character/list` (config `hoyo.bbsApiBase` + `hoyo.characterListPath`) because hoyoapi’s legacy `/character` often returns empty; merge icons from legacy when the modern list omits them. Daily note failures (usually Real-Time Notes disabled) must surface as `dailyNoteError` on Overview — never silent `null` dashes. See [`.cursor/skills/leyline-hoyoapi/SKILL.md`](.cursor/skills/leyline-hoyoapi/SKILL.md).
+- **HoYo data cache:** Main-process TTL cache (`hoyo.cacheTtlMs`, keys `overview` / `characters` / `abyss:1|2`) sits in Application; invalidate on force refresh, link/unlink, lock, and quit. IPC `data.*` accepts `{force?: boolean}`. genshin.dev keeps its own `genshinDev.cacheTtlMs` map. Renderer `CharacterRosterProvider` session-caches roster + enrichment for list/detail (`#/characters` + `#/characters/:characterKey`).
+- **Characters filters:** URL search params under HashRouter (`q`, `element`, `weapon`, `sort`) via `useSearchParams`.
+- **GOOD inventory:** Import / replace / clear live in **Settings** (`GOOD_INVENTORY_*`, unlock-only). Vault key `encryptedGoodInventory` (migrates legacy `encryptedGoodArtifacts`); config `inventory.goodMaxBytes`. Parses `artifacts[]`, `weapons[]`, and optional community `materials` key→count map. Browse pages: `#/artifacts`, `#/weapons`, `#/materials` (no import UI — empty states CTA to Settings). Icon URLs only from main-process resolvers (`resolveArtifactIconUrl`, `resolveWeaponIconUrl`, `resolveMaterialIconUrl`, `resolveCharacterIconUrl`); **Enka** (`hoyo.*IconBaseUrl` → `enka.network/ui`) is primary. Weapon/material stems come from generated catalogs (`electron/domain/good/weapon-catalog.ts`, `material-catalog.ts` — refresh via `scripts/generate-good-catalogs.mjs`). Cards use `data-rarity` + `RarityStars` / `StatChip` like Characters/Artifacts. Locked uses shadcn `Badge variant="destructive"`. Equipped shows Avatar + name; unequipped omits that row. Search: local input draft + `useDeferredValue` / debounced URL sync + memoized cards. Main-process session cache `goodInventory:v3`; renderer `GoodInventoryProvider` session-caches across nav. Cards must use `InventoryItemCard` (see inventory / roster cards above). Never invent bag/materials HoYo fetches; see [`TODO.md`](TODO.md).
+- **Genshin visuals:** Moegirl `Genshincolor` tokens live in `src/index.css`; mappers in `src/lib/genshin-visuals.ts`. Accents are shadcn-safe: Card keeps `bg-card` (border-inline-start + `CardAction` tint only); soft fills go on `Badge` via `data-genshin-chip` (`StatChip` / `RarityStars`). Equal-height metric rows use footer min-height + grid `items-stretch`. Never raw hex / gradient washes on routes.
+- **Character / relic icons:** Prefer Enka (`hoyo.characterIconBaseUrl` / `hoyo.artifactIconBaseUrl`) for `UI_AvatarIcon_*` / `UI_RelicIcon_*` ([`electron/domain/hoyo/icons.ts`](electron/domain/hoyo/icons.ts), [`electron/domain/good/icons.ts`](electron/domain/good/icons.ts)); HoYoLab upload CDN is fallback only. Only attach genshin.dev image URLs when catalog JSON succeeds so a dead API cannot shadow working icons. CSP `img-src` is built from `security.allowedImageHosts` (must include `enka.network`) in [`electron/infrastructure/security/trust.ts`](electron/infrastructure/security/trust.ts).
 
 ---
 
@@ -81,9 +110,10 @@ Treat security regressions as blockers. Do not weaken controls “for convenienc
 ### 2.4 Content Security Policy (A03 / Electron #7)
 
 - Enforce CSP via response headers in [`electron/infrastructure/security/session.ts`](electron/infrastructure/security/session.ts) on **mainFrame** responses only (not every subresource — that stalls Vite and strands the UI on Loading).
-- Do not put a second strict CSP meta tag in `index.html` (multiple CSPs AND together and break Vite HMR).
+- Do not put a second strict CSP meta tag in `index.html` (multiple CSPs AND together and break Vite HMR). The small theme boot script in `index.html` is intentional (pre-paint `dark` class); app CSP still comes from session headers.
 - Production: `script-src 'self'` (no `'unsafe-inline'` / `'unsafe-eval'` for scripts).
 - Dev may relax script/connect for Vite HMR only when `VITE_DEV_SERVER_URL` is set and app is unpackaged.
+- `img-src` hosts come from config `security.allowedImageHosts` (supports `*.` wildcards), not hardcoded CDN lists in trust.ts.
 - Keep `object-src 'none'`, `base-uri 'self'`, `frame-ancestors 'none'`, `form-action 'none'`.
 - **Never inject the app CSP into the HoYo login session partition.** That partition uses `hardenSession(..., {injectAppCsp: false})` so Hoyolab can load its own scripts/forms; isolation + navigation allowlist still apply.
 - Never enable `vite-plugin-electron` `renderer: {}` Node polyfills; they conflict with sandbox + contextIsolation.
@@ -173,7 +203,7 @@ Before finishing a change that touches Electron, IPC, auth, networking, or confi
 
 1. Confirm no new plaintext secret storage or renderer exposure of cookies.
 2. Confirm new IPC channels validate sender + payload schema.
-3. Confirm new URLs/hosts are config-driven and allowlisted.
+3. Confirm new URLs/hosts are config-driven and allowlisted (`allowedExternalHosts` / `allowedImageHosts` as appropriate).
 4. Confirm CSP / sandbox / contextIsolation were not weakened.
 5. Run `npm run check`.
-6. Update this file if you introduce a new security boundary or control.
+6. Update this file and [`README.md`](README.md) / [`docs/architecture.md`](docs/architecture.md) if you introduce a new security boundary, data source, or major UX convention.

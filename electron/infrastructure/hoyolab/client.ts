@@ -4,6 +4,7 @@ import {
   SpiralAbyssScheduleEnum,
 } from 'hoyoapi';
 import {
+  mergeCharacterDetails,
   normalizeCharacter,
   pickCharacterList,
 } from '../../domain/hoyo/character';
@@ -18,6 +19,7 @@ import type {
   HoyoRecordsCredentials,
   HoyoRecordsPort,
 } from '../../domain/ports/hoyo-records';
+import {loadConfig} from '../config/load';
 import {isHttpsUrl} from '../security/trust';
 
 function resolveLanguage(code: string): LanguageEnum {
@@ -33,6 +35,17 @@ function resolveLanguage(code: string): LanguageEnum {
     'ko-kr': LanguageEnum.KOREAN,
   };
   return map[normalized] ?? LanguageEnum.ENGLISH;
+}
+
+function iconBaseUrl(): string {
+  return loadConfig().hoyo.characterIconBaseUrl;
+}
+
+function toCharacterRows(payload: unknown): CharacterDto[] {
+  const base = iconBaseUrl();
+  return pickCharacterList(payload)
+    .map((row) => normalizeCharacter(row, base))
+    .filter((row): row is CharacterDto => row !== null);
 }
 
 async function createClient(
@@ -100,9 +113,14 @@ async function fetchCharacterListModern(
         'Failed to retrieve characters; check the linked UID and HoYoLab privacy.',
     );
   }
-  return pickCharacterList(res.data)
-    .map(normalizeCharacter)
-    .filter((row): row is CharacterDto => row !== null);
+  return toCharacterRows(res.data);
+}
+
+async function fetchLegacyCharacters(
+  client: GenshinImpact,
+): Promise<CharacterDto[]> {
+  const legacy = await client.record.characters();
+  return toCharacterRows(legacy);
 }
 
 async function validateAndLink(
@@ -140,6 +158,18 @@ async function fetchCharacters(
   try {
     const modern = await fetchCharacterListModern(client, credentials);
     if (modern.length > 0) {
+      const needsLegacy = modern.some((row) => !row.icon || !row.weapon);
+      if (!needsLegacy) {
+        return modern;
+      }
+      try {
+        const legacy = await fetchLegacyCharacters(client);
+        if (legacy.length > 0) {
+          return mergeCharacterDetails(modern, legacy);
+        }
+      } catch {
+        // Keep modern roster; CDN name fallback already applied in normalize.
+      }
       return modern;
     }
   } catch {
@@ -147,10 +177,7 @@ async function fetchCharacters(
   }
 
   try {
-    const legacy = await client.record.characters();
-    const fromLegacy = pickCharacterList(legacy)
-      .map(normalizeCharacter)
-      .filter((row): row is CharacterDto => row !== null);
+    const fromLegacy = await fetchLegacyCharacters(client);
     if (fromLegacy.length > 0) {
       return fromLegacy;
     }
@@ -159,9 +186,7 @@ async function fetchCharacters(
   }
 
   const records = await client.record.records();
-  return pickCharacterList(records)
-    .map(normalizeCharacter)
-    .filter((row): row is CharacterDto => row !== null);
+  return toCharacterRows(records);
 }
 
 async function fetchDailyNote(

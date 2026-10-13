@@ -23,6 +23,17 @@ function assertSafePathSuffix(pathSuffix: string): void {
   }
 }
 
+/** Normalize roster / catalog names into genshin.dev path slugs. */
+export function toCharacterSlug(name: string): string {
+  return name
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[''`]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 async function fetchJson<T>(pathSuffix: string): Promise<T> {
   assertSafePathSuffix(pathSuffix);
   const config = loadConfig();
@@ -74,18 +85,16 @@ interface GenshinDevCharacter {
   [key: string]: unknown;
 }
 
-async function getCharacter(id: string): Promise<GenshinDevCharacter> {
-  const slug = id.toLowerCase().replace(/\s+/g, '-');
+async function getCharacter(slug: string): Promise<GenshinDevCharacter> {
   assertSafePathSuffix(`characters/${slug}`);
   return fetchJson<GenshinDevCharacter>(`characters/${slug}`);
 }
 
-function characterIconUrl(id: string): string {
+function characterAssetUrl(slug: string, asset: string): string {
   const config = loadConfig();
   const base = config.genshinDev.baseUrl.replace(/\/$/, '');
-  const slug = id.toLowerCase().replace(/\s+/g, '-');
-  assertSafePathSuffix(`characters/${slug}/icon`);
-  return `${base}/characters/${encodeURIComponent(slug)}/icon`;
+  assertSafePathSuffix(`characters/${slug}/${asset}`);
+  return `${base}/characters/${encodeURIComponent(slug)}/${encodeURIComponent(asset)}`;
 }
 
 async function enrichCharacters(
@@ -95,14 +104,22 @@ async function enrichCharacters(
   const result: Record<string, CatalogCharacter> = {};
   await Promise.all(
     unique.map(async (name) => {
+      const slug = toCharacterSlug(name);
+      if (!slug) {
+        return;
+      }
       try {
-        const data = await getCharacter(name);
+        const data = await getCharacter(slug);
+        // Only attach asset URLs when the catalog responds — dead CDN links
+        // otherwise win over working HoYoLab icons in the renderer.
         result[name] = {
           ...data,
-          iconUrl: characterIconUrl(name),
+          iconUrl: characterAssetUrl(slug, 'icon'),
+          iconBigUrl: characterAssetUrl(slug, 'icon-big'),
+          portraitUrl: characterAssetUrl(slug, 'portrait'),
         };
       } catch {
-        // Character may be missing from genshin.dev catalog; skip enrichment.
+        // Character missing or genshin.dev unavailable; skip enrichment.
       }
     }),
   );

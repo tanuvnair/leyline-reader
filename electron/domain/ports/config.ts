@@ -10,4 +10,13 @@ export interface AppConfigPort {
   hoyoLanguage(): string;
   bbsApiBase(): string;
   characterListPath(): string;
+  artifactIconBaseUrl(): string;
+  artifactIconFallbackBaseUrl(): string;
+  characterIconBaseUrl(): string;
+  characterIconFallbackBaseUrl(): string;
+  weaponIconBaseUrl(): string;
+  weaponIconFallbackBaseUrl(): string;
+  materialIconBaseUrl(): string;
+  materialIconFallbackBaseUrl(): string;
+  goodInventoryMaxBytes(): number;
 }

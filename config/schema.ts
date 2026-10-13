@@ -27,11 +27,44 @@ export const appConfigSchema = z.object({
     sessionPartition: z.string().min(1),
     successUrlPatterns: z.array(z.string().min(1)).min(1),
     language: z.string().min(1),
+    cacheTtlMs: z.number().int().nonnegative(),
+    /**
+     * Primary CDN for `UI_AvatarIcon_*.png` (Enka preferred — newest characters).
+     * No trailing slash required.
+     */
+    characterIconBaseUrl: z.string().url(),
+    /** Secondary avatar CDN (HoYoLab) when primary 404s. */
+    characterIconFallbackBaseUrl: z.string().url(),
+    /**
+     * Primary CDN for `UI_RelicIcon_*.png` (Enka preferred — newest sets).
+     * No trailing slash required.
+     */
+    artifactIconBaseUrl: z.string().url(),
+    /** Secondary relic CDN (HoYoLab) when primary 404s. */
+    artifactIconFallbackBaseUrl: z.string().url(),
+    /**
+     * Primary CDN for `UI_EquipIcon_*.png` (Enka preferred).
+     * No trailing slash required.
+     */
+    weaponIconBaseUrl: z.string().url(),
+    /** Secondary weapon CDN when primary 404s. */
+    weaponIconFallbackBaseUrl: z.string().url(),
+    /**
+     * Primary CDN for `UI_ItemIcon_*.png` (Enka preferred).
+     * No trailing slash required.
+     */
+    materialIconBaseUrl: z.string().url(),
+    /** Secondary material CDN when primary 404s. */
+    materialIconFallbackBaseUrl: z.string().url(),
   }),
   genshinDev: z.object({
     baseUrl: z.string().url(),
     timeoutMs: z.number().int().positive(),
     cacheTtlMs: z.number().int().nonnegative(),
+  }),
+  inventory: z.object({
+    /** Max UTF-8 byte length of a GOOD JSON import payload. */
+    goodMaxBytes: z.number().int().positive().max(32_000_000),
   }),
   auth: z.object({
     bcryptRounds: z.number().int().min(10).max(20),
@@ -55,10 +88,15 @@ export const appConfigSchema = z.object({
   }),
   security: z.object({
     allowedExternalHosts: z.array(z.string().min(1)).min(1),
+    /** Hosts allowed in CSP img-src (supports leading `*.` wildcards). */
+    allowedImageHosts: z.array(z.string().min(1)).min(1),
   }),
   features: z.object({
     overview: z.boolean(),
     characters: z.boolean(),
+    artifacts: z.boolean(),
+    weapons: z.boolean(),
+    materials: z.boolean(),
     abyss: z.boolean(),
     settings: z.boolean(),
   }),

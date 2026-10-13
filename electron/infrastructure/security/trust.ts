@@ -97,14 +97,34 @@ export function isAllowedMainNavigation(raw: string): boolean {
   }
 }
 
+function cspHttpsHostSources(hosts: string[]): string {
+  return hosts
+    .map((host) => {
+      const cleaned = host.trim().toLowerCase().replace(/^https?:\/\//, '');
+      if (!cleaned) {
+        return '';
+      }
+      return `https://${cleaned}`;
+    })
+    .filter(Boolean)
+    .join(' ');
+}
+
 export function contentSecurityPolicy(isDev: boolean): string {
+  const config = loadConfig();
+  const imgSrc = cspHttpsHostSources(config.security.allowedImageHosts);
+  const genshinConnect = cspHttpsHostSources([
+    new URL(config.genshinDev.baseUrl).host,
+    '*.genshin.dev',
+  ]);
+
   if (isDev) {
     return [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: https://api.genshin.dev https://*.genshin.dev",
-      "connect-src 'self' ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:* https://api.genshin.dev https://*.genshin.dev",
+      `img-src 'self' data: ${imgSrc}`,
+      `connect-src 'self' ws://localhost:* ws://127.0.0.1:* http://localhost:* http://127.0.0.1:* ${genshinConnect}`,
       "font-src 'self' data:",
       "object-src 'none'",
       "base-uri 'self'",
@@ -116,8 +136,8 @@ export function contentSecurityPolicy(isDev: boolean): string {
     "default-src 'self'",
     "script-src 'self'",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https://api.genshin.dev https://*.genshin.dev",
-    "connect-src 'self' https://api.genshin.dev https://*.genshin.dev",
+    `img-src 'self' data: ${imgSrc}`,
+    `connect-src 'self' ${genshinConnect}`,
     "font-src 'self' data:",
     "object-src 'none'",
     "base-uri 'self'",

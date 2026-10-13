@@ -27,12 +27,24 @@
     ],
     "sessionPartition": "persist:hoyolab-login",
     "successUrlPatterns": ["hoyolab.com/account", "hoyolab.com/home", "account.hoyoverse.com"],
-    "language": "en-us"
+    "language": "en-us",
+    "cacheTtlMs": 300000,
+    "characterIconBaseUrl": "https://enka.network/ui",
+    "characterIconFallbackBaseUrl": "https://upload-os-bbs.mihoyo.com/game_record/genshin/character_icon",
+    "artifactIconBaseUrl": "https://enka.network/ui",
+    "artifactIconFallbackBaseUrl": "https://upload-os-bbs.mihoyo.com/game_record/genshin/equip",
+    "weaponIconBaseUrl": "https://enka.network/ui",
+    "weaponIconFallbackBaseUrl": "https://enka.network/ui",
+    "materialIconBaseUrl": "https://enka.network/ui",
+    "materialIconFallbackBaseUrl": "https://enka.network/ui"
   },
   "genshinDev": {
     "baseUrl": "https://api.genshin.dev",
     "timeoutMs": 15000,
     "cacheTtlMs": 3600000
+  },
+  "inventory": {
+    "goodMaxBytes": 8000000
   },
   "auth": {
     "bcryptRounds": 12,
@@ -69,11 +81,24 @@
       "mihoyo.com",
       "genshin.dev",
       "api.genshin.dev"
+    ],
+    "allowedImageHosts": [
+      "api.genshin.dev",
+      "*.genshin.dev",
+      "*.mihoyo.com",
+      "upload-bbs.mihoyo.com",
+      "upload-os-bbs.mihoyo.com",
+      "*.hoyoverse.com",
+      "*.hoyolab.com",
+      "enka.network"
     ]
   },
   "features": {
     "overview": true,
     "characters": true,
+    "artifacts": true,
+    "weapons": true,
+    "materials": true,
     "abyss": true,
     "settings": true
   },

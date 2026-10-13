@@ -2,6 +2,10 @@ import {safeStorage, app} from 'electron';
 import Store from 'electron-store';
 import path from 'node:path';
 import type {HoyoCookiePayload, LinkedAccountMeta} from '../../domain/account/types';
+import {
+  coerceGoodInventory,
+  type GoodInventory,
+} from '../../domain/good/inventory';
 import type {VaultPort} from '../../domain/ports/vault';
 import {loadConfig} from '../config/load';
 
@@ -11,6 +15,13 @@ interface VaultSchema {
   passwordHash: string | null;
   encryptedHoyoCookie: string | null;
   account: LinkedAccountMeta | null;
+  /** Encrypted GOOD inventory JSON (artifacts + weapons + materials). */
+  encryptedGoodInventory: string | null;
+  /**
+   * Legacy artifacts-only blob. Migrated on first loadGoodInventory read.
+   * @deprecated
+   */
+  encryptedGoodArtifacts: string | null;
 }
 
 let store: Store<VaultSchema> | null = null;
@@ -34,6 +45,8 @@ function getStore(): Store<VaultSchema> {
       passwordHash: null,
       encryptedHoyoCookie: null,
       account: null,
+      encryptedGoodInventory: null,
+      encryptedGoodArtifacts: null,
     },
   });
   return store;
@@ -51,6 +64,14 @@ function decrypt(ciphertext: string): string {
     throw new Error('OS secure storage is not available on this system');
   }
   return safeStorage.decryptString(Buffer.from(ciphertext, 'base64'));
+}
+
+function decryptJson(encrypted: string): unknown | null {
+  try {
+    return JSON.parse(decrypt(encrypted)) as unknown;
+  } catch {
+    return null;
+  }
 }
 
 export function getPasswordHash(): string | null {
@@ -75,12 +96,11 @@ export function loadHoyoCookie(): HoyoCookiePayload | null {
   if (!encrypted) {
     return null;
   }
-  try {
-    const json = decrypt(encrypted);
-    return JSON.parse(json) as HoyoCookiePayload;
-  } catch {
+  const json = decryptJson(encrypted);
+  if (!json) {
     return null;
   }
+  return json as HoyoCookiePayload;
 }
 
 export function clearHoyoCookie(): void {
@@ -100,6 +120,45 @@ export function getAccount(): LinkedAccountMeta | null {
   return getStore().get('account');
 }
 
+export function saveGoodInventory(inventory: GoodInventory): void {
+  const encrypted = encrypt(JSON.stringify(inventory));
+  getStore().set('encryptedGoodInventory', encrypted);
+  // Drop legacy key once the shared inventory is written.
+  getStore().set('encryptedGoodArtifacts', null);
+}
+
+export function loadGoodInventory(): GoodInventory | null {
+  const current = getStore().get('encryptedGoodInventory');
+  if (current) {
+    const inventory = coerceGoodInventory(decryptJson(current));
+    return inventory;
+  }
+
+  // One-time migration from artifacts-only vault rows.
+  const legacy = getStore().get('encryptedGoodArtifacts');
+  if (!legacy) {
+    return null;
+  }
+  const inventory = coerceGoodInventory(decryptJson(legacy));
+  if (!inventory) {
+    return null;
+  }
+  saveGoodInventory(inventory);
+  return inventory;
+}
+
+export function clearGoodInventory(): void {
+  getStore().set('encryptedGoodInventory', null);
+  getStore().set('encryptedGoodArtifacts', null);
+}
+
+export function hasGoodInventory(): boolean {
+  return Boolean(
+    getStore().get('encryptedGoodInventory') ||
+      getStore().get('encryptedGoodArtifacts'),
+  );
+}
+
 export function getVaultPath(): string {
   return getStore().path;
 }
@@ -115,4 +174,8 @@ export const vaultPort: VaultPort = {
   hasHoyoCookie,
   saveAccount,
   getAccount,
+  saveGoodInventory,
+  loadGoodInventory,
+  clearGoodInventory,
+  hasGoodInventory,
 };
