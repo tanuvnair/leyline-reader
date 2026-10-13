@@ -2,6 +2,7 @@ import {safeStorage, app} from 'electron';
 import Store from 'electron-store';
 import path from 'node:path';
 import type {HoyoCookiePayload, LinkedAccountMeta} from '../../domain/account/types';
+import type {GoodArtifactsInventory} from '../../domain/good/artifacts';
 import type {VaultPort} from '../../domain/ports/vault';
 import {loadConfig} from '../config/load';
 
@@ -11,6 +12,8 @@ interface VaultSchema {
   passwordHash: string | null;
   encryptedHoyoCookie: string | null;
   account: LinkedAccountMeta | null;
+  /** Encrypted GOOD artifacts inventory JSON (safeStorage). */
+  encryptedGoodArtifacts: string | null;
 }
 
 let store: Store<VaultSchema> | null = null;
@@ -34,6 +37,7 @@ function getStore(): Store<VaultSchema> {
       passwordHash: null,
       encryptedHoyoCookie: null,
       account: null,
+      encryptedGoodArtifacts: null,
     },
   });
   return store;
@@ -100,6 +104,32 @@ export function getAccount(): LinkedAccountMeta | null {
   return getStore().get('account');
 }
 
+export function saveGoodArtifacts(inventory: GoodArtifactsInventory): void {
+  const encrypted = encrypt(JSON.stringify(inventory));
+  getStore().set('encryptedGoodArtifacts', encrypted);
+}
+
+export function loadGoodArtifacts(): GoodArtifactsInventory | null {
+  const encrypted = getStore().get('encryptedGoodArtifacts');
+  if (!encrypted) {
+    return null;
+  }
+  try {
+    const json = decrypt(encrypted);
+    return JSON.parse(json) as GoodArtifactsInventory;
+  } catch {
+    return null;
+  }
+}
+
+export function clearGoodArtifacts(): void {
+  getStore().set('encryptedGoodArtifacts', null);
+}
+
+export function hasGoodArtifacts(): boolean {
+  return Boolean(getStore().get('encryptedGoodArtifacts'));
+}
+
 export function getVaultPath(): string {
   return getStore().path;
 }
@@ -115,4 +145,8 @@ export const vaultPort: VaultPort = {
   hasHoyoCookie,
   saveAccount,
   getAccount,
+  saveGoodArtifacts,
+  loadGoodArtifacts,
+  clearGoodArtifacts,
+  hasGoodArtifacts,
 };

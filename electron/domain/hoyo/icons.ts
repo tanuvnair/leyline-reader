@@ -3,7 +3,7 @@
  * `iconBaseUrl` is the directory that hosts `UI_AvatarIcon_*.png` files.
  */
 
-/** Multi-word English names → miHoYo `UI_AvatarIcon_*` stems. */
+/** Multi-word English / GOOD keys → `UI_AvatarIcon_*` stems (Enka + HoYoLab). */
 const ICON_STEM_ALIASES: Record<string, string> = {
   'raiden shogun': 'Shougun',
   'hu tao': 'Hutao',
@@ -16,6 +16,9 @@ const ICON_STEM_ALIASES: Record<string, string> = {
   'sangonomiya kokomi': 'Kokomi',
   'shikanoin heizou': 'Heizou',
   'yun jin': 'Yunjin',
+  'lan yan': 'Lanyan',
+  'kujou sara': 'Sara',
+  sara: 'Sara',
   yanfei: 'Feiyan',
   amber: 'Ambor',
   jean: 'Qin',
@@ -46,15 +49,49 @@ function stemFromName(name: string): string {
   return token.replace(/[^A-Za-z]/g, '');
 }
 
+/**
+ * Normalize display / GOOD keys for alias lookup.
+ * `RaidenShogun` → `raiden shogun`, `HuTao` → `hu tao`.
+ */
+export function normalizeCharacterNameKey(name: string): string {
+  return name
+    .trim()
+    .replaceAll(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replaceAll(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .replaceAll(/[_-]+/g, ' ')
+    .toLowerCase()
+    .replaceAll(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * GOOD keys are often PascalCase (`LanYan`, `RaidenShogun`). Prefer aliases,
+ * then joined stem (`Lanyan`) for PascalCase / spaced names, else last token
+ * (`Ayaka` from "Kamisato Ayaka").
+ */
 export function iconStemFromEnglishName(name: string): string | undefined {
-  const key = name.trim().toLowerCase();
+  const raw = name.trim();
+  const key = normalizeCharacterNameKey(raw);
   if (!key) {
     return undefined;
   }
   if (ICON_STEM_ALIASES[key]) {
     return ICON_STEM_ALIASES[key];
   }
-  const stem = stemFromName(name);
+
+  const pascalOrSpaced =
+    /[a-z][A-Z]/.test(raw) ||
+    /^[A-Z][a-z]+[A-Z]/.test(raw) ||
+    key.includes(' ');
+  if (pascalOrSpaced) {
+    const joined = key.replaceAll(' ', '');
+    if (joined) {
+      return joined.charAt(0).toUpperCase() + joined.slice(1);
+    }
+  }
+
+  const spaced = key.replaceAll(/\b\w/g, (ch) => ch.toUpperCase());
+  const stem = stemFromName(spaced);
   return stem || undefined;
 }
 

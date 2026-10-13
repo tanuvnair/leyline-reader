@@ -2,7 +2,7 @@
   "name": "leyline-reader",
   "version": "0.1.0",
   "private": true,
-  "description": "Electron dashboard for Genshin Impact accounts via HoYoAPI and genshin.dev",
+  "description": "Electron dashboard for Genshin Impact: HoYoLab sync, GOOD artifact import, Enka icons, genshin.dev enrichment",
   "license": "MIT",
   "author": "leyline-reader",
   "type": "module",

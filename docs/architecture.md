@@ -47,21 +47,34 @@ Process isolation is orthogonal to layering:
 | Auth status / setup / unlock / lock / change password | `AUTH_*` |
 | HoYo status / link / unlink | `HOYO_*` |
 | Overview / characters / abyss | `DATA_*` |
+| GOOD artifacts status / import / clear | `ARTIFACTS_*` |
 
 Window minimize/maximize/close stay in Presentation → Electron APIs (no Application proxy).
 
-## HoYo data caching
+## Caching
 
 - **Application TTL cache** (`electron/application/cache/ttl-cache.ts`): keys `overview`, `characters`, `abyss:1`, `abyss:2`; TTL from `hoyo.cacheTtlMs` (default 5 minutes).
 - **Force refresh:** IPC `data.*` accepts `{force?: boolean}`; skips cache read when `force: true`.
-- **Invalidate:** link success / unlink / lock / app quit (also clears on failed link rollback).
+- **Invalidate:** link success / unlink / lock / app quit (also clears on failed link rollback). Clears the shared Map (TTL + session entries).
 - **genshin.dev:** separate in-memory map in Infrastructure with `genshinDev.cacheTtlMs`. Only attach catalog image URLs when the JSON fetch succeeds.
 - **Renderer:** `CharacterRosterProvider` shares roster + enrichment between Characters list and detail for the unlocked session; force refresh replaces it; clears on unlink/lock (shell unmount).
+- **GOOD artifacts:** persisted encrypted in the vault (`encryptedGoodArtifacts`); independent of HoYo link; survives lock/unlock. Main-process **session** cache key `artifacts:v5` (`setSessionCached`) holds the decrypted + icon-resolved status DTO until import/clear/lock/quit. Renderer `ArtifactsInventoryProvider` mirrors roster session caching for `#/artifacts` (client DTO rev bumps force re-hydrate after icon schema changes).
+
+## Icons (CDN)
+
+| Asset | Primary | Fallback | Resolver |
+| --- | --- | --- | --- |
+| Character avatars | `hoyo.characterIconBaseUrl` → Enka `…/ui/UI_AvatarIcon_*.png` | `hoyo.characterIconFallbackBaseUrl` → HoYoLab | `electron/domain/hoyo/icons.ts` |
+| Artifact relics | `hoyo.artifactIconBaseUrl` → Enka `…/ui/UI_RelicIcon_{setId}_{slot}.png` | `hoyo.artifactIconFallbackBaseUrl` → HoYoLab | `electron/domain/good/icons.ts` + `set-ids.ts` |
+
+CSP `img-src` must allow `enka.network` (and HoYoLab upload hosts) via `security.allowedImageHosts`. Renderer never invents catalog URLs; DTOs carry `icon` / `iconFallback` / `locationIcon` / `locationIconFallback`.
+
+Prayer one-piece sets use Enka/game `_3` icon suffix (not circlet `_5`).
 
 ## Presentation notes
 
-- Routes: Overview, Characters (`#/characters`, `#/characters/:characterKey`), Abyss, Settings (plus Login).
+- Routes: Overview, Characters (`#/characters`, `#/characters/:characterKey`), Artifacts (`#/artifacts` — GOOD JSON import), Abyss, Settings (plus Login).
 - Characters filter state: React Router search params (`q`, `element`, `weapon`, `sort`).
+- Artifacts: unlock-only (no `AccountGate`); import/browse GOOD `artifacts[]`; filters `q` / `slot` / `equipped`. Search uses a local input draft + `useDeferredValue` / debounced URL sync so typing stays responsive over large grids. See [`TODO.md`](../TODO.md).
 - Theme: `next-themes` in the renderer (`leyline-theme` localStorage); Appearance controls on Settings.
-- Avatars: Domain icon resolution (`electron/domain/hoyo/icons.ts`) + config `hoyo.characterIconBaseUrl`; CSP `img-src` from `security.allowedImageHosts`.
-- Visual accents: Moegirl-aligned CSS tokens in `src/index.css`; compose with shadcn `Card` / `Badge` (`StatChip`, `MetricCard`, `RarityStars`).
+- Visual accents: Moegirl-aligned CSS tokens in `src/index.css`; compose with shadcn `Card` / `Badge` (`StatChip`, `MetricCard`, `RarityStars`). Locked artifact chips use shadcn `Badge variant="destructive"`.

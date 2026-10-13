@@ -9,6 +9,11 @@ import {
   unlock,
 } from '../application/auth/auth-use-cases';
 import {
+  clearGoodArtifacts,
+  getArtifactsStatus,
+  importGoodArtifacts,
+} from '../application/artifacts/artifacts-use-cases';
+import {
   getAbyss,
   getCharacters,
   getOverview,
@@ -30,6 +35,7 @@ const dataFetchOptionsSchema = z
     force: z.boolean().optional(),
   })
   .default({});
+const goodJsonSchema = z.string().min(1).max(32_000_000);
 
 function withSecurity<TArgs extends unknown[], TResult>(
   handler: (event: IpcMainInvokeEvent, ...args: TArgs) => TResult | Promise<TResult>,
@@ -183,6 +189,40 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
           return {ok: false as const, error: NOT_LINKED};
         }
         return {ok: false as const, error: message};
+      }
+    }),
+  );
+
+  ipcMain.handle(
+    IpcChannels.ARTIFACTS_STATUS,
+    withSecurity(() => {
+      try {
+        return getArtifactsStatus();
+      } catch (error) {
+        return {ok: false as const, error: redactError(error).message};
+      }
+    }),
+  );
+
+  ipcMain.handle(
+    IpcChannels.ARTIFACTS_IMPORT,
+    withSecurity((_event, jsonText: unknown) => {
+      try {
+        const payload = goodJsonSchema.parse(jsonText);
+        return importGoodArtifacts(payload);
+      } catch (error) {
+        return {ok: false as const, error: redactError(error).message};
+      }
+    }),
+  );
+
+  ipcMain.handle(
+    IpcChannels.ARTIFACTS_CLEAR,
+    withSecurity(() => {
+      try {
+        return clearGoodArtifacts();
+      } catch (error) {
+        return {ok: false as const, error: redactError(error).message};
       }
     }),
   );

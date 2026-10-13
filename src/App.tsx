@@ -8,6 +8,7 @@ import {LoginPage} from '@/routes/login';
 import {OverviewPage} from '@/routes/overview';
 import {CharactersPage} from '@/routes/characters';
 import {CharacterDetailPage} from '@/routes/character-detail';
+import {ArtifactsPage} from '@/routes/artifacts';
 import {AbyssPage} from '@/routes/abyss';
 import {SettingsPage} from '@/routes/settings';
 
@@ -26,6 +27,7 @@ export default function App() {
                   path="characters/:characterKey"
                   element={<CharacterDetailPage />}
                 />
+                <Route path="artifacts" element={<ArtifactsPage />} />
                 <Route path="abyss" element={<AbyssPage />} />
                 <Route path="settings" element={<SettingsPage />} />
               </Route>

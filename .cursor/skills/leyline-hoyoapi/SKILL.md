@@ -14,6 +14,7 @@ description: >-
 - Prefer `GenshinImpact` with UID when known; use `GenshinImpact.create` only when linking.
 - Language and BBS API URLs come from config (`hoyo.bbsApiBase`, `hoyo.characterListPath`) via `AppConfigPort`.
 - Surface sanitized DTOs through Application use cases → IPC (`DATA_OVERVIEW`, `DATA_CHARACTERS`, `DATA_ABYSS`).
+- **Artifacts inventory is not HoYoLab.** Full bag uses local GOOD JSON import (`ARTIFACTS_*`, `electron/domain/good/artifacts.ts`). Relic/equipped-by icons resolve via Enka (+ HoYoLab fallback), not Battle Chronicle. Do not add undocumented bag/materials game-record calls.
 
 ## Endpoint quirks (do not regress)
 
